@@ -15,12 +15,12 @@ pip install jax flax orbax optax distrax gymnax matplotlib numpy
 
 <img src="example_rollouts.png" alt="main_rollouts" width="800"/>
 
-## Environments (jax_envs.py)
+## Environments (`jax_envs.py`)
 1. PointParticlePosition
 `env = PointParticlePosition(equivariant=False)`
 This environment represents a single point particle where the actions directly affect the velocity of the particle. The state of the particle is represented as the position and velocity in 3 dimension (x,y,z). Observation is the state of the particle and a reference state (position and velocity), but in this environment the reference velocity is set to be 0. This represents a statically fixed goal. In the equivariant mode, the Gallilean symmetry is employed and the observation is reduced to the error between the reference and state in both position and velocity (6-dim). 
 
-## Training (train_policy.py)
+## Training (`train_policy.py`)
 In order to train a policy, we can simply run `python train_policy.py` with some specified arguments. 
 ``` 
 Arguments:
@@ -40,7 +40,7 @@ python train_policy.py --seed 2024 --equivariant True --debug False --exp-name P
 ### Saved Data
 By default, a new directory will be created at `./checkpoints/{exp-name}` and this is where the resulting data generated during training will be saved. This includes the configuration dictionary made from the default parameters and CLI args (`config.txt`), training curves (`training_data.npz`), the final model weights (`/model_final/`) and some figures (`episode_returns_shaded.png`, and `terminal_timesteps_summary.png`). By default, if an experiment name already exists in the `./checkpoints/` directory, a numerical index will be appended and incremented to the experiment name. 
 
-## Evaluations (eval_policy.py)
+## Evaluations (`eval_policy.py`)
 After training a policy, we can evaluate the weights in a new script to simply rollout the environment.
 ```
 Arguments:
