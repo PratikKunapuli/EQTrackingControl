@@ -1,8 +1,8 @@
 # Point Particle EQ
-This respository contains RL environments and training code to investigate equivariance for a point particle. All environments and training code is written using Jax.
+This respository contains RL environments and PPO training code to investigate equivariance for a point particle. All environments and training code is written using Jax. 
 
-## Instalation
-This package was run on Python 3.10. Other python versions may work, but it has not been tested. Jax can be installed with backend support for GPU/TPU by following their installation instructions.  
+## Installation
+This package was run on Python 3.10. Other python versions may work, but it has not been tested. Jax can be installed with backend support for GPU/TPU by following their installation instructions. Training takes approximately 4 mins for 10M env steps, running on an Nvidia RTX A5000. 
 
 ```
 git clone git@github.com:PratikKunapuli/PointParticleEQ.git
