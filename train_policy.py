@@ -274,7 +274,7 @@ def parse_args(config):
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
-    parser.add_argument("--equivariant", dest="EQUIVARIANT", required=True, help="Whether to use the equivariant version of the environment")
+    parser.add_argument("--equivariant", default=False, action='store_true', dest="EQUIVARIANT", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
     return parser.parse_args()
@@ -303,6 +303,8 @@ if __name__ == "__main__":
 
     config = parse_args(config)
     config = vars(config)
+
+    print("Running with Equivariant: ", config['EQUIVARIANT'])
 
     rng = jax.random.PRNGKey(config['seed'])
 

@@ -41,7 +41,8 @@ def select_seed_params(params, seed_index=0):
 
 def model_call(model, params, obs):
     pi, value = model.apply({'params': model_params}, obs)
-    action = pi.mean()
+    # action = pi.mean()
+    action = pi.sample(seed=0)
     return action
 
 def env_step(env, env_state, action, rng):
@@ -66,6 +67,8 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
+    print("Running Equivariant?: ", args.equivariant)
+
     rng = jax.random.PRNGKey(0)
 
     # Define the model
@@ -89,7 +92,7 @@ if __name__ == "__main__":
     done = False
 
     init_carry = (env_states, model_params, obs, env_rng)
-    carry, (env_states, rewards, dones) = jax.lax.scan(rollout_step, init_carry, None, length=2000)
+    carry, (env_states, rewards, dones) = jax.lax.scan(rollout_step, init_carry, None, length=5000)
 
 
     pos = env_states.pos # This is of shape (100, 5, 3)

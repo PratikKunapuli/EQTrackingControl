@@ -7,8 +7,11 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
 
 # Load data
 # The named variables (keys) are ["mean_rewards", "std_rewards", "mean_terminal_timesteps", "std_terminal_timesteps", "x_vals_rew", "x_vals_ts"]
-non_eq_data = np.load("./plots/ppo_jax_3_layer_no_eq.npz")
-eq_data = np.load("./plots/ppo_jax_3_layer_eq.npz")
+# non_eq_data = np.load("./plots/ppo_jax_3_layer_no_eq.npz")
+# eq_data = np.load("./plots/ppo_jax_3_layer_eq.npz")
+
+non_eq_data = np.load("./checkpoints/ppo_3_layer_no_eq_no_action_norm_2000_max/training_data.npz")
+eq_data = np.load("./checkpoints/ppo_3_layer_eq_no_action_norm_2000_max/training_data.npz")
 
 # Plot data
 plt.figure()
@@ -39,7 +42,7 @@ axins.xaxis.set_major_formatter(FuncFormatter(lambda x,_: f"{(x/1e6):.1f}M"))
 
 # draw a bbox of the region of the inset axes in the parent axes and connecting lines between the bbox and the inset axes area
 mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
-plt.savefig("./plots/ppo_jax_3_layer_eq_vs_no_eq_rewards.png", dpi=1000)
+plt.savefig("./plots/ppo_jax_3_layer_eq_vs_no_eq_rewards_no_action_norm.png", dpi=1000)
 
 
 plt.figure()
@@ -53,4 +56,4 @@ plt.grid(True)
 plt.legend(loc="best")
 plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x,_: f"{int(x/1e6)}M"))
 plt.title("Agent Timesteps: PPO JAX 3 Layer Policy Averaged over 5 Seeds \n 16 Envs 512 Steps 10M Steps")
-plt.savefig("./plots/ppo_jax_3_layer_eq_vs_no_eq.png", dpi=1000)
+plt.savefig("./plots/ppo_jax_3_layer_eq_vs_no_eq_no_action_norm.png", dpi=1000)

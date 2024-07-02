@@ -28,15 +28,17 @@ Arguments:
 --debug : Flag to print debug info to terminal. 
 --no-debug : Flag to not print debug info. This is the default. 
 --num-seeds : How many random seeds to train simultaneously. Default is 5. 
---equivariant : Whether to instantiate the environment flag as equivariant. Required. 
+--equivariant : Whether to instantiate the environment flag as equivariant. Default without flag is False. 
 --exp-name : Name for the experiment. Required.
 
 ```
 
-Example:
+Examples:
 ```
-python train_policy.py --seed 2024 --equivariant True --debug False --exp-name PPO
+python train_policy.py --seed 2024 --equivariant --debug --exp-name PPO_equivariant
+python train_policy.py --no-debug --exp-name PPO_no_equivariant_seed_0
 ```
+
 ### Saved Data
 By default, a new directory will be created at `./checkpoints/{exp-name}` and this is where the resulting data generated during training will be saved. This includes the configuration dictionary made from the default parameters and CLI args (`config.txt`), training curves (`training_data.npz`), the final model weights (`/model_final/`) and some figures (`episode_returns_shaded.png`, and `terminal_timesteps_summary.png`). By default, if an experiment name already exists in the `./checkpoints/` directory, a numerical index will be appended and incremented to the experiment name. 
 

@@ -32,6 +32,8 @@ class PointParticlePosition:
         self.max_time = 100.0 # prev 2.0
         self.equivariant = equivariant
 
+        print("Creating PointParticlePosition environment with Equivaraint: ", self.equivariant)
+
     def step(self, key, env_state, action):
         '''
         Step function for the environment. Arguments are defined as follows:
@@ -68,25 +70,26 @@ class PointParticlePosition:
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
     
     def _is_terminal(self, env_state):
 
         # if any part of the state is outside the bounds of +- 5, then the episode is done
         # or if the time is greater than the max time
-        outside_world_bounds = jnp.any(jnp.abs(env_state.pos) > 10.)
+        outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > 10.)
+        exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > 10.)
         time_exceeded = env_state.time > self.max_time
 
-        return jnp.logical_or(outside_world_bounds, time_exceeded)
+        return jnp.logical_or(jnp.logical_or(outside_world_bounds, time_exceeded), exceeded_error_velocity)
     
-    def _get_reward(self, env_state):
+    def _get_reward(self, env_state, action):
         '''
         Get reward from the environment state. 
         Reward is defined as the "LQR" cost function: scaled position error and scaled velocity error
         '''
         state = env_state
 
-        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2)
+        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.0 * (jnp.linalg.norm(action)**2)
 
     def _get_obs(self, env_state):
         '''
