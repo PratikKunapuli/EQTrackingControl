@@ -267,10 +267,22 @@ def make_train(config):
     
     return train
 
+def parse_args(config):
+    import argparse
+    parser = argparse.ArgumentParser(description="Train PPO on PointParticlePosition")
+    parser.set_defaults(**config) # allows the config to remain the same 
+    parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
+    parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Print debug information")
+    parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
+    parser.add_argument("--equivariant", dest="EQUIVARIANT", required=True, help="Whether to use the equivariant version of the environment")
+    parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
+    parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
+    return parser.parse_args()
 if __name__ == "__main__":
     import time
     import matplotlib.pyplot as plt
 
+    # Default PPO config
     config = {
         "LR": 3e-4,
         "NUM_ENVS": 16,
@@ -286,14 +298,13 @@ if __name__ == "__main__":
         "MAX_GRAD_NORM": 0.5,
         "ACTIVATION": "tanh",
         "ANNEAL_LR": True,
-        "DEBUG": True,
-        "EQUIVARIANT": True,
-        "EXP_NAME": "ppo_jax_3_layer_eq",
-        "SAVE_FREQUENCY": 1000000,
+        "DEBUG": False,
     }
 
+    config = parse_args(config)
+    config = vars(config)
 
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.PRNGKey(config['seed'])
 
 
     # single seed training
@@ -304,7 +315,7 @@ if __name__ == "__main__":
     # print(f"\n\nTime taken: {t1-t0:.4f} seconds\n\n")
 
     # Parallel seed training
-    rngs = jax.random.split(rng, 5)
+    rngs = jax.random.split(rng, config['num_seeds'])
     train_vjit = jax.jit(jax.vmap(make_train(config)))
     t0 = time.time()
     out = jax.block_until_ready(train_vjit(rngs)) # training on multiple seeds
@@ -344,7 +355,7 @@ if __name__ == "__main__":
     plt.xlabel("Env Steps")
     plt.ylabel("Mean Episode Return")
     plt.grid(True)
-    plt.savefig("ppo_jax_episode_returns_shaded.png", dpi=1000)
+    plt.savefig(checkpoint_path+"/episode_returns_shaded.png", dpi=1000)
 
     # Find when episodes returned, what their timesteps were
     terminal_timesteps = metrics['returned_episode_lengths'] * metrics['returned_episode']
@@ -372,41 +383,12 @@ if __name__ == "__main__":
     plt.ylabel("Mean Terminal Timestep")
     plt.legend()
     plt.grid(True)
-    plt.savefig("terminal_timesteps_summary.png", dpi=1000)
+    plt.savefig(checkpoint_path+"/terminal_timesteps_summary.png", dpi=1000)
 
     # I want to save the curves that I plot here so that later I can plot them on the same curve
     # I will save the mean and std of the terminal timesteps
-    save_name = "ppo_jax_3_layer_" + ("eq" if config['EQUIVARIANT'] else "no_eq") + ".npz"
+    save_name = checkpoint_path + "/training_data.npz"
     np.savez(save_name, mean_rewards=mean_rewards, std_rewards=std_rewards, mean_terminal_timesteps=mean_terminal_timesteps.mean(axis=0), std_terminal_timesteps=std_terminal_timesteps.mean(axis=0), x_vals_rew=x_vals_reward, x_vals_ts=x_vals_ts)
-
-
-    # import code; code.interact(local=locals())
-
-
-    # import code; code.interact(local=locals())
-    # plt.figure()
-    # plt.plot(metrics["returned_episode_lengths"].mean(-1).reshape(-1))
-
-
-
-    # print(out)
-
-    # Save model
-    # import code; code.interact(local=locals())
-
-    # plt.figure()
-    # plt.plot(out["metrics"]["returned_episode_returns"].mean(-1).reshape(-1))
-    # plt.xlabel("Update Step")
-    # plt.ylabel("Mean Episode Return")
-    # plt.savefig("ppo_jax_episode_returns.png", dpi=1000)
-
-    # plt.figure()
-    # plt.plot(out["metrics"]["returned_episode_lengths"].mean(-1).reshape(-1))
-    # plt.xlabel("Update Step")
-    # plt.ylabel("Mean Episode Length")
-    # plt.savefig("ppo_jax_episode_lengths.png", dpi=1000)
-        
-
 
 
 

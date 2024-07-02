@@ -119,6 +119,7 @@ if __name__ == "__main__":
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
     # ax.legend()
+    plt.title(f"Particle Position Rollout for {args.num_envs} Environments")
     plt.tight_layout()
     plt.savefig(save_path_base+"/particle_position.png", dpi=1000)
 
