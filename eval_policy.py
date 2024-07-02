@@ -13,7 +13,7 @@ from flax.core import freeze
 import os
 
 from models import ActorCritic
-from jax_envs import PointState, PointParticlePosition
+from jax_envs import PointState, PointParticlePosition, PointParticleConstantVelocity
 import argparse
 
 def select_seed_params(params, seed_index=0):
@@ -61,6 +61,8 @@ def parse_args():
     parser.add_argument("--num-envs", type=int, default=5, help="Number of environments to evaluate in parallel")
     parser.add_argument("--equivariant", action="store_true", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
+    parser.add_argument("--num-timesteps", type=int, default=5000, help="Number of timesteps to run the evaluation for")
+    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment to use for evaluation. position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity)")
 
     return parser.parse_args()
 
@@ -86,7 +88,14 @@ if __name__ == "__main__":
 
 
 
-    env = PointParticlePosition(equivariant=args.equivariant)
+    # Create environment
+    if args.env_name == "position":
+        env = PointParticlePosition(equivariant=args.equivariant)
+    elif args.env_name == "constant_velocity":
+        env = PointParticleConstantVelocity(equivariant=args.equivariant)
+    else:
+        raise ValueError("Invalid environment name")
+    
     env_rng = jax.random.split(rng, args.num_envs)
     env_states, obs = jax.vmap(env.reset)(env_rng)
     done = False
@@ -100,6 +109,7 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.markers import MarkerStyle
 
     # colors = plt.cm.jet(jnp.linspace(0, 1, args.num_envs))
     default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -113,11 +123,23 @@ if __name__ == "__main__":
                 rollout_end = t
                 break
         print(i, rollout_end)
+        
         # color = colors[i]
         color = default_colors[i % len(default_colors)]
         ax.scatter(pos[0, i, 0], pos[0, i, 1], pos[0, i, 2], label="Particle Start", marker=".", color=color)
         ax.plot(pos[:rollout_end, i, 0], pos[:rollout_end, i, 1], pos[:rollout_end, i, 2], label="Particle Position", color=color)
-        ax.scatter(ref_pos[0, i, 0], ref_pos[0, i, 1], ref_pos[0, i, 2], label="Reference Position", marker="*", color=color)
+        # print("pos start: ", pos[0, i, :])
+        # print("pos end: ", pos[rollout_end-1, i, :])
+        if args.env_name == "position":
+            ax.scatter(ref_pos[0, i, 0], ref_pos[0, i, 1], ref_pos[0, i, 2], label="Reference Position", marker="*", color=color)
+        elif args.env_name == "constant_velocity":
+            # Plot beginning and end of reference trajectory
+            # print("Ref start: ", ref_pos[0, i, :])
+            # print("Ref end: ", ref_pos[rollout_end-1, i, :])
+            ax.scatter(ref_pos[0, i, 0], ref_pos[0, i, 1], ref_pos[0, i, 2], label="Reference Position Start", marker='d', color=color)
+            ax.scatter(ref_pos[rollout_end-1, i, 0], ref_pos[rollout_end-1, i, 1], ref_pos[rollout_end-1, i, 2], label="Reference Position End", marker='*', color=color)
+        else:
+            raise ValueError("Invalid environment name")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
@@ -125,6 +147,48 @@ if __name__ == "__main__":
     plt.title(f"Particle Position Rollout for {args.num_envs} Environments \n Equivariant Model: {args.equivariant}")
     plt.tight_layout()
     plt.savefig(save_path_base+"/particle_position.png", dpi=1000)
+    # plt.show()
+
+
+    # Plot position and reference position in 3 axis for each env and save as N unique plots
+    for i in range(args.num_envs):
+        fig = plt.figure()
+        plt.subplot(3, 1, 1)
+        plt.plot(jnp.arange(rollout_end), pos[:rollout_end, i, 0], label="Particle Position")
+        plt.plot(jnp.arange(rollout_end), ref_pos[:rollout_end, i, 0], label="Reference Position")
+        plt.ylabel("X")
+        plt.legend(loc="best")
+        plt.subplot(3, 1, 2)
+        plt.plot(jnp.arange(rollout_end), pos[:rollout_end, i, 1], label="Particle Position")
+        plt.plot(jnp.arange(rollout_end), ref_pos[:rollout_end, i, 1], label="Reference Position")
+        plt.ylabel("Y")
+        plt.legend(loc="best")
+        plt.subplot(3, 1, 3)
+        plt.plot(jnp.arange(rollout_end), pos[:rollout_end, i, 2], label="Particle Position")
+        plt.plot(jnp.arange(rollout_end), ref_pos[:rollout_end, i, 2], label="Reference Position")
+        plt.ylabel("Z")
+        plt.legend(loc="best")
+        plt.xlabel("Timesteps")
+        plt.title(f"Particle Position Rollout for Env {i} \n Equivariant Model: {args.equivariant}")
+        plt.tight_layout()
+        plt.savefig(save_path_base+f"/particle_position_env_{i}.png", dpi=1000)
+        # plt.show
+
+    # Make a plot that shows the error between the particle position and the reference position and averages over all envs with mean and std. dev. shown
+    errors = jnp.linalg.norm(pos - ref_pos, axis=-1)
+    mean_errors = jnp.mean(errors, axis=1)
+    std_errors = jnp.std(errors, axis=1)
+
+    plt.figure()
+    plt.plot(jnp.arange(rollout_end), mean_errors[:rollout_end], label="Mean Error")
+    plt.fill_between(jnp.arange(rollout_end), mean_errors[:rollout_end] - std_errors[:rollout_end], mean_errors[:rollout_end] + std_errors[:rollout_end], alpha=0.5)
+    plt.xlabel("Timesteps")
+    plt.ylabel("Error")
+    plt.legend()
+    plt.title(f"Mean Error Between Particle Position and Reference Position \n  {args.num_envs} Seeds averaged, Equivariant Model: {args.equivariant}")
+    plt.tight_layout()
+    plt.savefig(save_path_base+"/mean_error.png", dpi=1000)
+    # plt.show()
 
 
     # Plot reward curves for each env

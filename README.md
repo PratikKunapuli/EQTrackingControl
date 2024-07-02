@@ -20,6 +20,10 @@ pip install jax flax orbax optax distrax gymnax matplotlib numpy
 `env = PointParticlePosition(equivariant=False)`
 This environment represents a single point particle where the actions directly affect the velocity of the particle. The state of the particle is represented as the position and velocity in 3 dimension (x,y,z). Observation is the state of the particle and a reference state (position and velocity), but in this environment the reference velocity is set to be 0. This represents a statically fixed goal. In the equivariant mode, the Gallilean symmetry is employed and the observation is reduced to the error between the reference and state in both position and velocity (6-dim). 
 
+2. PointParticleConstantVelocity
+`env = PointParticleConstantVelocity(equivariant=False)`
+This environment represents a single point particle where the actions directly affect the velocity of the particle. The state of the particle is represented as the position and velocity in 3 dimension (x,y,z). Observation is the state of the particle and a reference state (position and velocity), as well as the reference acceleration. The reference acceleration is set to be 0 for this environment, resulting in constant velocity of the reference after the reference velocity is randomized in the reset function. Non-equivariant representation is (15-dim) and the equivariant representation is (9-dim) for position error, velocity error, and reference acceleration. 
+
 ## Training (`train_policy.py`)
 In order to train a policy, we can simply run `python train_policy.py` with some specified arguments. 
 ``` 
@@ -30,13 +34,13 @@ Arguments:
 --num-seeds : How many random seeds to train simultaneously. Default is 5. 
 --equivariant : Whether to instantiate the environment flag as equivariant. Default without flag is False. 
 --exp-name : Name for the experiment. Required.
-
+--env-name : Name for the environment. Required. Options are: "position" for PointParticlePosition env, "constant_velocity" for PointParticleConstantVelocity env. 
 ```
 
 Examples:
 ```
-python train_policy.py --seed 2024 --equivariant --debug --exp-name PPO_equivariant
-python train_policy.py --no-debug --exp-name PPO_no_equivariant_seed_0
+python train_policy.py --seed 2024 --equivariant --debug --exp-name PPO_equivariant --env-name position
+python train_policy.py --no-debug --exp-name PPO_no_equivariant_seed_0 --env-name constant_velocity
 ```
 
 ### Saved Data
@@ -50,11 +54,12 @@ Arguments:
 --equivariant : Flag to set the equivariance in the environment. Must match training setup or error will occur. 
 --load-path : Path to the model weights we want to evaluate. Required.
 --num-envs : How many environemnts to run in parallel. Default 5.
+--env-name : Name for the environment. Required. Options are: "position" for PointParticlePosition env, "constant_velocity" for PointParticleConstantVelocity env. 
 ```
 
 Example:
 ```
-python eval_policy.py --seed 2024 --load-path ./checkpoints/PPO/model_final/ --equivariant
+python eval_policy.py --seed 2024 --load-path ./checkpoints/PPO/model_final/ --equivariant --env-name position
 ```
 
 This script will rollout `{num-envs}` environments and then make a 3D plot representing the rollout of the particles and their respective goals. Additionally, reward curves will be generated for each particle. These figures will be saved in the same parent directly of the weights as `particle_position.png` and `rewards.png`. 

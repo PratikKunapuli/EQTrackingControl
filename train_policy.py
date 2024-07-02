@@ -17,12 +17,12 @@ import numpy as np
 from functools import partial
 import os
 
-from jax_envs import PointParticlePosition, PointState
+from jax_envs import PointParticlePosition, PointState, PointParticleConstantVelocity, PointVelocityState, EnvState
 from models import ActorCritic
 
 @struct.dataclass
 class LogEnvState:
-    env_state: PointState
+    env_state: EnvState
     episode_returns: float
     episode_lengths: int
     returned_episode_returns: float
@@ -91,7 +91,12 @@ def make_train(config):
 
 
     # Create environment
-    env = PointParticlePosition(equivariant=config["EQUIVARIANT"])
+    if config["env_name"] == "position":
+        env = PointParticlePosition(equivariant=config["EQUIVARIANT"])
+    elif config["env_name"] == "constant_velocity":
+        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"])
+    else:
+        raise ValueError("Invalid environment name")
     env = LogWrapper(env)
     
     # make checkpointer
@@ -273,6 +278,7 @@ def parse_args(config):
     parser.set_defaults(**config) # allows the config to remain the same 
     
     # Env specific arguments
+    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity)")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
@@ -296,7 +302,7 @@ def parse_args(config):
     parser.add_argument("--activation", type=str, dest="ACTIVATION", default="tanh", help="Activation function to use")
     parser.add_argument("--anneal-lr", dest="ANNEAL_LR", action="store_true", help="Anneal the learning rate")
     parser.add_argument('--no-anneal-lr', dest='ANNEAL_LR', action='store_false', help="Do not anneal the learning rate")
-    
+
     return parser.parse_args()
 if __name__ == "__main__":
     import time
