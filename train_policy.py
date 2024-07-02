@@ -271,12 +271,32 @@ def parse_args(config):
     import argparse
     parser = argparse.ArgumentParser(description="Train PPO on PointParticlePosition")
     parser.set_defaults(**config) # allows the config to remain the same 
+    
+    # Env specific arguments
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
     parser.add_argument("--equivariant", default=False, action='store_true', dest="EQUIVARIANT", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
+    
+    # PPO specific arguments
+    parser.add_argument("--lr", type=float, dest="LR", default=3e-4, help="Learning rate")
+    parser.add_argument("--num-envs", type=int, dest="NUM_ENVS", default=16, help="Number of parallel environments")
+    parser.add_argument("--num-steps", type=int, dest="NUM_STEPS", default=512, help="Number of steps per environment")
+    parser.add_argument("--total-timesteps", type=float, dest="TOTAL_TIMESTEPS", default=10e6, help="Total number of timesteps to train for")
+    parser.add_argument("--update-epochs", type=int, dest="UPDATE_EPOCHS", default=5, help="Number of epochs to update the policy")
+    parser.add_argument("--num-minibatches", type=int, dest="NUM_MINIBATCHES", default=4, help="Number of minibatches to split the data into")
+    parser.add_argument("--gamma", type=float, dest="GAMMA", default=0.99, help="Discount factor")
+    parser.add_argument("--lambda", type=float, dest="LAMBDA", default=0.95, help="GAE lambda")
+    parser.add_argument("--clip-range", type=float, dest="CLIP_RANGE", default=0.2, help="PPO clip range")
+    parser.add_argument("--ent-coef", type=float, dest="ENT_COEF", default=0.0, help="Entropy coefficient")
+    parser.add_argument("--vf-coef", type=float, dest="VF_COEF", default=0.5, help="Value function coefficient")
+    parser.add_argument("--max-grad-norm", type=float, dest="MAX_GRAD_NORM", default=0.5, help="Maximum gradient norm")
+    parser.add_argument("--activation", type=str, dest="ACTIVATION", default="tanh", help="Activation function to use")
+    parser.add_argument("--anneal-lr", dest="ANNEAL_LR", action="store_true", help="Anneal the learning rate")
+    parser.add_argument('--no-anneal-lr', dest='ANNEAL_LR', action='store_false', help="Do not anneal the learning rate")
+    
     return parser.parse_args()
 if __name__ == "__main__":
     import time

@@ -122,7 +122,7 @@ if __name__ == "__main__":
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
     # ax.legend()
-    plt.title(f"Particle Position Rollout for {args.num_envs} Environments")
+    plt.title(f"Particle Position Rollout for {args.num_envs} Environments \n Equivariant Model: {args.equivariant}")
     plt.tight_layout()
     plt.savefig(save_path_base+"/particle_position.png", dpi=1000)
 
@@ -139,5 +139,6 @@ if __name__ == "__main__":
     plt.xlabel("Timesteps")
     plt.ylabel("Reward")
     plt.legend()
+    plt.title(f"Reward Curves for {args.num_envs} Environments \n Equivariant Model: {args.equivariant}")
     plt.tight_layout()
     plt.savefig(save_path_base+"/rewards.png", dpi=1000)

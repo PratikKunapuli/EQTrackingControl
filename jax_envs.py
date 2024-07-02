@@ -89,7 +89,7 @@ class PointParticlePosition:
         '''
         state = env_state
 
-        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.0 * (jnp.linalg.norm(action)**2)
+        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.01 * (jnp.linalg.norm(action)**2)
 
     def _get_obs(self, env_state):
         '''
