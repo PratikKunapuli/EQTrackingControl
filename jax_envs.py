@@ -22,18 +22,53 @@ class PointState(EnvState):
     ref_pos: jnp.ndarray
     ref_vel: jnp.ndarray
 
-class PointParticlePosition:
-    def __init__(self, ref_pos=None, equivariant=False):
-        self.dt = 0.05 # prev 0.01
+@struct.dataclass
+class PointVelocityState(EnvState):
+    pos: jnp.ndarray
+    vel: jnp.ndarray
+    ref_pos: jnp.ndarray
+    ref_vel: jnp.ndarray
+    ref_acc: jnp.ndarray
 
+class PointParticleBase:
+    def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, **kwargs):
         self.state_mean = jnp.array([0., 0., 0.])
-        self.state_cov = jnp.eye(3) * 0.001
+        self.state_cov = jnp.eye(3) * state_cov_scalar
         self.ref_mean = jnp.array([0., 0., 0.])
-        self.ref_cov = jnp.eye(3) * 0.001
-
+        self.ref_cov = jnp.eye(3) * ref_cov_scalar
         self.predefined_ref_pos = ref_pos
-        self.max_time = 100.0 # prev 2.0
+
+        self.max_time = max_time
+        self.dt = dt
         self.equivariant = equivariant
+        self.other_args = kwargs
+
+    def _sample_random_ref_pos(self, key):
+        return jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov)
+    
+    def _get_predefined_ref_pos(self, key):
+        return jnp.array(self.predefined_ref_pos) if self.predefined_ref_pos is not None else jnp.zeros_like(self.ref_mean)
+    
+    def _maybe_reset(self, key, env_state, done):
+        '''
+        Reset helper to work with the jax conditional flow. 
+        If the done flag is True, run self._reset with the key. 
+        If done is False, return the env_state as is.
+        '''
+        return lax.select(done, self._reset(key), env_state)
+
+    @property
+    def num_actions(self) -> int:
+        return 3
+    
+    def action_space(self) -> spaces.Box:
+        low = jnp.array([-1., -1., -1.])
+        high = jnp.array([1., 1., 1.])
+        return spaces.Box(low, high, (3,), jnp.float32)
+
+class PointParticlePosition(PointParticleBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         print("Creating PointParticlePosition environment with Equivaraint: ", self.equivariant)
 
@@ -107,14 +142,6 @@ class PointParticlePosition:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             return eq_state
 
-    def _maybe_reset(self, key, env_state, done):
-        '''
-        Reset helper to work with the jax conditional flow. 
-        If the done flag is True, run self._reset with the key. 
-        If done is False, return the env_state as is.
-        '''
-        return lax.select(done, self._reset(key), env_state)
-
     def _reset(self, key):
         '''
         Reset function for the environment. Returns the full env_state (state, key)
@@ -136,12 +163,6 @@ class PointParticlePosition:
         new_point_state = PointState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, time=time)
 
         return new_point_state
-    
-    def _sample_random_ref_pos(self, key):
-        return jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov)
-    
-    def _get_predefined_ref_pos(self, key):
-        return jnp.array(self.predefined_ref_pos) if self.predefined_ref_pos is not None else jnp.zeros_like(self.ref_mean)
 
     def reset(self, key):
         env_state = self._reset(key)
@@ -150,19 +171,10 @@ class PointParticlePosition:
     @property
     def name(self)-> str:
         return "PointParticlePosition"
-    
-    @property
-    def num_actions(self) -> int:
-        return 3
 
     @property
     def EnvState(self):
         return PointState
-    
-    def action_space(self) -> spaces.Box:
-        low = jnp.array([-1., -1., -1.])
-        high = jnp.array([1., 1., 1.])
-        return spaces.Box(low, high, (3,), jnp.float32)
     
     def observation_space(self) -> spaces.Box:
         n_obs = 6 if self.equivariant else 12 # this ONLY works since this is dependent on a constructor arg but this is bad behavior. 
@@ -171,26 +183,10 @@ class PointParticlePosition:
 
         return spaces.Box(low, high, (n_obs,), jnp.float32)
     
-@struct.dataclass
-class PointVelocityState(EnvState):
-    pos: jnp.ndarray
-    vel: jnp.ndarray
-    ref_pos: jnp.ndarray
-    ref_vel: jnp.ndarray
-    ref_acc: jnp.ndarray
 
-class PointParticleConstantVelocity:
-    def __init__(self, ref_pos=None, equivariant=False):
-        self.dt = 0.05 # prev 0.01
-
-        self.state_mean = jnp.array([0., 0., 0.])
-        self.state_cov = jnp.eye(3) * 0.5
-        self.ref_mean = jnp.array([0., 0., 0.])
-        self.ref_cov = jnp.eye(3) * 3.0
-
-        self.predefined_ref_pos = ref_pos
-        self.max_time = 100.0 # prev 2.0
-        self.equivariant = equivariant
+class PointParticleConstantVelocity(PointParticleBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         print("Creating PointParticleConstantVelocity environment with Equivaraint: ", self.equivariant)
 
@@ -262,14 +258,6 @@ class PointParticleConstantVelocity:
         else:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
             return eq_state
-    
-    def _maybe_reset(self, key, env_state, done):
-        '''
-        Reset helper to work with the jax conditional flow. 
-        If the done flag is True, run self._reset with the key. 
-        If done is False, return the env_state as is.
-        '''
-        return lax.select(done, self._reset(key), env_state)
 
     def _reset(self, key):
         '''
@@ -277,7 +265,7 @@ class PointParticleConstantVelocity:
         '''
         pos = jrandom.multivariate_normal(key, self.state_mean, self.state_cov)
         # vel = jnp.zeros(3)
-        vel = jrandom.multivariate_normal(key, jnp.zeros(3), jnp.eye(3) * 0.5)
+        vel = jrandom.multivariate_normal(key, jnp.zeros(3), self.state_cov)
 
         ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
 
@@ -293,12 +281,6 @@ class PointParticleConstantVelocity:
 
         return new_point_state
     
-    def _sample_random_ref_pos(self, key):
-        return jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov)
-    
-    def _get_predefined_ref_pos(self, key):
-        return jnp.array(self.predefined_ref_pos) if self.predefined_ref_pos is not None else jnp.zeros_like(self.ref_mean)
-    
     def reset(self, key):
         env_state = self._reset(key)
         return env_state, self._get_obs(env_state)
@@ -308,17 +290,8 @@ class PointParticleConstantVelocity:
         return "PointParticleVelocity"
     
     @property
-    def num_actions(self) -> int:
-        return 3
-    
-    @property
     def EnvState(self):
         return PointVelocityState
-    
-    def action_space(self) -> spaces.Box:
-        low = jnp.array([-1., -1., -1.])
-        high = jnp.array([1., 1., 1.])
-        return spaces.Box(low, high, (3,), jnp.float32)
     
     def observation_space(self) -> spaces.Box:
         n_obs = 9 if self.equivariant else 15
