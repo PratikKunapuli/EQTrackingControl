@@ -1,4 +1,11 @@
-# Point Particle EQ
+<h1 align="center">
+  <b>Point Particle Environments in JAX</b><br>
+</h1>
+
+<p align="center">
+ <img src="https://img.shields.io/badge/python-3.10-blue" />
+</p>
+
 This respository contains RL environments and PPO training code to investigate equivariance for a point particle. All environments and training code is written using Jax. 
 
 ## Installation
