@@ -11,9 +11,9 @@ pip install jax flax orbax optax distrax gymnax matplotlib numpy
 ```
 
 ## Example Results
-<img src="example_results.png" alt="main_results" width="800"/>
+<img src="./figures/example_results.png" alt="main_results" width="800"/>
 
-<img src="example_rollouts.png" alt="main_rollouts" width="800"/>
+<img src="./figures/example_rollouts.png" alt="main_rollouts" width="800"/>
 
 ## Environments (`jax_envs.py`)
 1. PointParticlePosition
