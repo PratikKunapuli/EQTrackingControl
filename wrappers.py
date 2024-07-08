@@ -10,6 +10,9 @@ import gymnasium as gym
 from gymnasium import core
 
 from gymnax.environments import spaces
+from gymnax.environments.spaces import gymnax_space_to_gym_space as convert_space
+
+import numpy as np
 
 
 from jax_envs import EnvState
@@ -73,47 +76,54 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         self._env = copy.deepcopy(env)
         self.metadata.update( {
             "name": env.name,
-            "render.modes": [],
+            "render.modes": ["human"],
         })
 
         self.rng : chex.PRNGKey = jax.random.PRNGKey(0)
         self._seed(seed)
-
+        _, self.env_state = self._env.reset(self.rng)
+        
     def _seed(self, seed: Optional[int]) -> None:
         self.rng = jax.random.PRNGKey(seed or 0)
+        self._np_random = np.random.Generator(np.random.PCG64(seed))
 
-    def reset(self, *, seed: Optional[int]=None) -> core.ObsType:
+    def reset(self, *, seed: Optional[int]=None, options: Optional[Any]=None) -> Tuple[core.ObsType, Any]:
         if seed is not None:
             self._seed(seed)
         
         self.rng, reset_key = jax.random.split(self.rng)
-        state, obs = self._env.reset(reset_key)
-        return obs
+        self.env_state, obs = self._env.reset(reset_key)
+        return np.array(obs), {}
     
     def step(self, action: core.ActType) -> Tuple[core.ObsType, float, bool, dict]:
         self.rng, step_key = jax.random.split(self.rng)
-        state, obs, reward, done, info = self._env.step(step_key, action)
-        return obs, reward, done, info
+        self.env_state, obs, reward, done, info = self._env.step(step_key, self.env_state, action)
+        return np.array(obs), float(reward), bool(done), info
 
     def render(self, mode: str="human"):
         return None
 
-    def convert_space(self, space: spaces.Space) -> gym.Space:
-        if isinstance(space, spaces.Discrete):
-            return gym.spaces.Discrete(space.n)
-        elif isinstance(space, spaces.Box):
-            return gym.spaces.Box(
-                low=space.low,
-                high=space.high,
-                dtype=space.dtype,
-            )
-        else:
-            raise ValueError(f"Unsupported space type: {type(space)}")
+    @property
+    def observation_space(self):
+        return convert_space(self._env.observation_space())
 
     @property
-    def observation_space(self) -> gym.Space:
-        return self.convert_space(self._env.observation_space)
+    def action_space(self):
+        return convert_space(self._env.action_space())
+    
+if __name__ == "__main__":
+    # Test creating env and using gymnax to gym wrapper
 
-    @property
-    def action_space(self) -> gym.Space:
-        return self.convert_space(self._env.action_space)
+    from jax_envs import PointParticlePosition
+    from gymnasium.utils import env_checker
+
+    env = PointParticlePosition()
+    env_gym = GymnaxToGymWrapper(env)
+
+    obs, info = env_gym.reset()
+    print(obs, info)
+
+    obs, reward, done, info = env_gym.step(env_gym.action_space.sample())
+
+    print(obs, reward, done, info)
+    
