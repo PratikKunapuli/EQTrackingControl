@@ -39,10 +39,11 @@ def make_train(config):
 
 
     # Create environment
+    print("Terminate on error? : ", config["TERMINATE_ON_ERROR"])
     if config["env_name"] == "position":
-        env = PointParticlePosition(equivariant=config["EQUIVARIANT"])
+        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"])
     elif config["env_name"] == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"])
+        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"])
     else:
         raise ValueError("Invalid environment name")
     env = LogWrapper(env)
@@ -233,6 +234,7 @@ def parse_args(config):
     parser.add_argument("--equivariant", default=False, action='store_true', dest="EQUIVARIANT", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
+    parser.add_argument("--terminate-on-error", default=True, dest="TERMINATE_ON_ERROR", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Whether to terminate the episode on error")
     
     # PPO specific arguments
     parser.add_argument("--lr", type=float, dest="LR", default=3e-4, help="Learning rate")

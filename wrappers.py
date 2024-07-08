@@ -4,6 +4,13 @@ import chex
 
 from functools import partial
 from typing import Sequence, NamedTuple, Any, Tuple, Union, Optional
+import copy
+
+import gymnasium as gym
+from gymnasium import core
+
+from gymnax.environments import spaces
+
 
 from jax_envs import EnvState
 
@@ -57,3 +64,56 @@ class LogWrapper(GymnaxWrapper):
         info["timestep"] = state.timestep
         info["returned_episode"] = done
         return state, obs, reward, done, info
+    
+
+class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
+    """Wrapper to convert Gymnax environment to Gym environment."""
+    def __init__(self, env, seed: Optional[int]=None):
+        super().__init__()
+        self._env = copy.deepcopy(env)
+        self.metadata.update( {
+            "name": env.name,
+            "render.modes": [],
+        })
+
+        self.rng : chex.PRNGKey = jax.random.PRNGKey(0)
+        self._seed(seed)
+
+    def _seed(self, seed: Optional[int]) -> None:
+        self.rng = jax.random.PRNGKey(seed or 0)
+
+    def reset(self, *, seed: Optional[int]=None) -> core.ObsType:
+        if seed is not None:
+            self._seed(seed)
+        
+        self.rng, reset_key = jax.random.split(self.rng)
+        state, obs = self._env.reset(reset_key)
+        return obs
+    
+    def step(self, action: core.ActType) -> Tuple[core.ObsType, float, bool, dict]:
+        self.rng, step_key = jax.random.split(self.rng)
+        state, obs, reward, done, info = self._env.step(step_key, action)
+        return obs, reward, done, info
+
+    def render(self, mode: str="human"):
+        return None
+
+    def convert_space(self, space: spaces.Space) -> gym.Space:
+        if isinstance(space, spaces.Discrete):
+            return gym.spaces.Discrete(space.n)
+        elif isinstance(space, spaces.Box):
+            return gym.spaces.Box(
+                low=space.low,
+                high=space.high,
+                dtype=space.dtype,
+            )
+        else:
+            raise ValueError(f"Unsupported space type: {type(space)}")
+
+    @property
+    def observation_space(self) -> gym.Space:
+        return self.convert_space(self._env.observation_space)
+
+    @property
+    def action_space(self) -> gym.Space:
+        return self.convert_space(self._env.action_space)
