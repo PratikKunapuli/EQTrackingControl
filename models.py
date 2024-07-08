@@ -26,6 +26,7 @@ class ActorCritic(nn.Module):
         actor_mean = nn.Dense(64, kernel_init=orthogonal(np.sqrt(2)), bias_init=constant(0.0))(actor_mean)
         actor_mean = activation(actor_mean)
         actor_mean = nn.Dense(self.action_dim, kernel_init=orthogonal(0.01), bias_init=constant(0.0))(actor_mean)
+        actor_mean = activation(actor_mean)
         actor_logstd = self.param('log_std', nn.initializers.zeros, (self.action_dim,))
         pi = distrax.MultivariateNormalDiag(loc=actor_mean, scale_diag=jnp.exp(actor_logstd))
 

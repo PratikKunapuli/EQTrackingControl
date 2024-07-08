@@ -27,9 +27,9 @@ class PointParticlePosition:
         self.dt = 0.05 # prev 0.01
 
         self.state_mean = jnp.array([0., 0., 0.])
-        self.state_cov = jnp.eye(3) * 0.5
+        self.state_cov = jnp.eye(3) * 0.001
         self.ref_mean = jnp.array([0., 0., 0.])
-        self.ref_cov = jnp.eye(3) * 3.0
+        self.ref_cov = jnp.eye(3) * 0.001
 
         self.predefined_ref_pos = ref_pos
         self.max_time = 100.0 # prev 2.0
@@ -92,7 +92,7 @@ class PointParticlePosition:
         '''
         state = env_state
 
-        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.01 * (jnp.linalg.norm(action)**2)
+        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.0 * (jnp.linalg.norm(action)**2)
 
     def _get_obs(self, env_state):
         '''
@@ -119,11 +119,12 @@ class PointParticlePosition:
         '''
         Reset function for the environment. Returns the full env_state (state, key)
         '''
-        pos = jrandom.multivariate_normal(key, self.state_mean, self.state_cov)
+        key, pos_key, vel_key, ref_key = jrandom.split(key, 4)
+        pos = jrandom.multivariate_normal(pos_key, self.state_mean, self.state_cov)
         # vel = jnp.zeros(3)
-        vel = jrandom.multivariate_normal(key, jnp.zeros(3), jnp.eye(3) * 0.5)
+        vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), self.state_cov)
 
-        ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
+        ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, ref_key)
 
         # ref_pos = lax.cond(self.predefined_ref_pos is None, 
         #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 

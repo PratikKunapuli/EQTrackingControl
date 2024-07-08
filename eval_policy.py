@@ -41,8 +41,8 @@ def select_seed_params(params, seed_index=0):
 
 def model_call(model, params, obs):
     pi, value = model.apply({'params': model_params}, obs)
-    # action = pi.mean()
-    action = pi.sample(seed=0)
+    action = pi.mean()
+    # action = pi.sample(seed=0)
     return action
 
 def env_step(env, env_state, action, rng):
@@ -53,7 +53,7 @@ def rollout_step(carry, unused):
     (env_states, model_params, obs, rng) = carry
     actions = jax.vmap(model_call, in_axes=(None, None, 0))(model, model_params, obs)
     env_states, obs, rewards, dones, infos = jax.vmap(env_step, in_axes=(None, 0, 0, 0))(env, env_states, actions, rng)
-    return (env_states, model_params, obs, rng), (env_states, rewards, dones)
+    return (env_states, model_params, obs, rng), (env_states, rewards, dones, actions)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate a policy")
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     done = False
 
     init_carry = (env_states, model_params, obs, env_rng)
-    carry, (env_states, rewards, dones) = jax.lax.scan(rollout_step, init_carry, None, length=5000)
+    carry, (env_states, rewards, dones, actions) = jax.lax.scan(rollout_step, init_carry, None, length=5000)
 
 
     pos = env_states.pos # This is of shape (100, 5, 3)
@@ -152,6 +152,11 @@ if __name__ == "__main__":
 
     # Plot position and reference position in 3 axis for each env and save as N unique plots
     for i in range(args.num_envs):
+        rollout_end = dones.shape[0]
+        for t in range(dones.shape[0]):
+            if dones[t, i]:
+                rollout_end = t
+                break
         fig = plt.figure()
         plt.subplot(3, 1, 1)
         plt.plot(jnp.arange(rollout_end), pos[:rollout_end, i, 0], label="Particle Position")
@@ -172,6 +177,24 @@ if __name__ == "__main__":
         plt.title(f"Particle Position Rollout for Env {i} \n Equivariant Model: {args.equivariant}")
         plt.tight_layout()
         plt.savefig(save_path_base+f"/particle_position_env_{i}.png", dpi=1000)
+
+        plt.figure()
+        plt.subplot(3,1,1)
+        plt.plot(jnp.arange(rollout_end), actions[:rollout_end, i, 0], label="Action X")
+        plt.legend()
+        plt.ylabel("Action X")
+        plt.subplot(3,1,2)
+        plt.plot(jnp.arange(rollout_end), actions[:rollout_end, i, 1], label="Action Y")
+        plt.ylabel("Action Y")
+        plt.legend()
+        plt.subplot(3,1,3)
+        plt.plot(jnp.arange(rollout_end), actions[:rollout_end, i, 2], label="Action Z")
+        plt.legend()
+        plt.xlabel("Timesteps")
+        plt.ylabel("Action Z")
+        plt.suptitle(f"Action Curves for Env {i} \n Equivariant Model: {args.equivariant}")
+        plt.tight_layout()
+        plt.savefig(save_path_base+f"/actions_env_{i}.png", dpi=1000)
         # plt.show
 
     # Make a plot that shows the error between the particle position and the reference position and averages over all envs with mean and std. dev. shown

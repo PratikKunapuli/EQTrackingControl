@@ -394,8 +394,14 @@ if __name__ == "__main__":
 
     # Step 2: Aggregate Summary Information
     # Compute mean and std of terminal timesteps, ignoring NaN values
-    mean_terminal_timesteps = np.nanmean(terminal_timesteps, axis=(2, 3))  # Mean across env_steps and n_envs
-    std_terminal_timesteps = np.nanstd(terminal_timesteps, axis=(2, 3))  # Std across env_steps and n_envs
+    # import code; code.interact(local=locals())
+
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        mean_terminal_timesteps = np.nanmean(terminal_timesteps, axis=(2, 3))  # Mean across env_steps and n_envs
+        std_terminal_timesteps = np.nanstd(terminal_timesteps, axis=(2, 3))  # Std across env_steps and n_envs
 
 
     plt.figure()
@@ -412,6 +418,10 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.savefig(checkpoint_path+"/terminal_timesteps_summary.png", dpi=1000)
+    # mean_terminal_timesteps = np.zeros((5, 610))
+    # std_terminal_timesteps = np.zeros((5, 610))
+    # x_vals_ts = np.arange(610) * config['NUM_ENVS'] * config['NUM_STEPS']
+
 
     # I want to save the curves that I plot here so that later I can plot them on the same curve
     # I will save the mean and std of the terminal timesteps
