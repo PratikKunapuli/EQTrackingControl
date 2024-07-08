@@ -5,71 +5,19 @@ import optax
 import flax.linen as nn
 from flax.linen.initializers import constant, orthogonal
 from flax.training.train_state import TrainState
-from flax import struct
 from flax.training import orbax_utils, checkpoints
 
 import orbax.checkpoint as orbax_cp
 
-import chex
 
 from typing import Sequence, NamedTuple, Any, Tuple, Union, Optional
 import numpy as np
-from functools import partial
 import os
 
 from jax_envs import PointParticlePosition, PointState, PointParticleConstantVelocity, PointVelocityState, EnvState
 from models import ActorCritic
+from wrappers import LogWrapper
 
-@struct.dataclass
-class LogEnvState:
-    env_state: EnvState
-    episode_returns: float
-    episode_lengths: int
-    returned_episode_returns: float
-    returned_episode_lengths: int
-    timestep: int
-
-class GymnaxWrapper(object):
-    """Base class for Gymnax wrappers."""
-
-    def __init__(self, env):
-        self._env = env
-
-    # provide proxy access to regular attributes of wrapped object
-    def __getattr__(self, name):
-        return getattr(self._env, name)
-
-class LogWrapper(GymnaxWrapper):
-    """Log the episode returns and lengths."""
-    def __init__(self, env):
-        super().__init__(env)
-
-    @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key: chex.PRNGKey) -> Tuple[LogEnvState, chex.Array]:
-        env_state, obs = self._env.reset(key)
-        state = LogEnvState(env_state, 0, 0, 0, 0, 0)
-        return state, obs
-
-    @partial(jax.jit, static_argnums=(0,))
-    def step(self, key: chex.PRNGKey, state: LogEnvState, action: Union[int, float]) -> Tuple[LogEnvState, chex.Array, float, bool, dict]:
-        env_state, obs, reward, done, info = self._env.step(key, state.env_state, action)
-        new_episode_return = state.episode_returns + reward
-        new_episode_length = state.episode_lengths + 1
-        state = LogEnvState(
-            env_state=env_state,
-            episode_returns=new_episode_return * (1 - done),
-            episode_lengths=new_episode_length * (1 - done),
-            returned_episode_returns=state.returned_episode_returns * (1 - done)
-            + new_episode_return * done,
-            returned_episode_lengths=state.returned_episode_lengths * (1 - done)
-            + new_episode_length * done,
-            timestep=state.timestep + 1,
-        )
-        info["returned_episode_returns"] = state.returned_episode_returns
-        info["returned_episode_lengths"] = state.returned_episode_lengths
-        info["timestep"] = state.timestep
-        info["returned_episode"] = done
-        return state, obs, reward, done, info
 
 
 class Transition(NamedTuple):
@@ -280,7 +228,7 @@ def parse_args(config):
     # Env specific arguments
     parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity)")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
-    parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Print debug information")
+    parser.add_argument("--debug", default=False, dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
     parser.add_argument("--equivariant", default=False, action='store_true', dest="EQUIVARIANT", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
