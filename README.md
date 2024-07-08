@@ -76,3 +76,19 @@ python eval_policy.py --seed 2024 --load-path ./checkpoints/PPO/model_final/ --e
 ```
 
 This script will rollout `{num-envs}` environments and then make a 3D plot representing the rollout of the particles and their respective goals. Additionally, reward curves will be generated for each particle. These figures will be saved in the same parent directly of the weights as `particle_position.png` and `rewards.png`. 
+
+## Wrappers (`wrappers.py`)
+Included in this repository are some useful wrappers. One such wrapper is the `LogWrapper()` used in `train_policy.py`. Another wrapper is incuded to convert from [Gymnax](https://github.com/RobertTLange/gymnax/tree/main)-style environments to [Gymnasium](https://github.com/RobertTLange/gymnax/tree/main)-style environements, `GymnaxToGymWrapper()`. This allows the use of numpy-based inputs and outputs so other RL implementations can be evaluated. 
+
+Example:
+```
+env = PointParticlePosition()
+env_gym = GymnaxToGymWrapper(env)
+
+obs, info = env_gym.reset()
+print(obs, info)
+
+obs, reward, done, info = env_gym.step(env_gym.action_space.sample())
+print(obs, reward, done, info)
+
+```
