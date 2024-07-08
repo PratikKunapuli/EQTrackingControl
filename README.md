@@ -15,7 +15,8 @@ pip install jax flax orbax optax distrax gymnax matplotlib numpy
 
 <img src="./figures/example_rollouts.png" alt="main_rollouts" width="800"/>
 
-## Environments (`jax_envs.py`)
+## Environments (`particle_envs.py`)
+Environments here inheret some common utilities from a base environemnt `PointParticleBase` in `base_envs.py`. 
 1. PointParticlePosition
 `env = PointParticlePosition(equivariant=False)`
 This environment represents a single point particle where the actions directly affect the velocity of the particle. The state of the particle is represented as the position and velocity in 3 dimension (x,y,z). Observation is the state of the particle and a reference state (position and velocity), but in this environment the reference velocity is set to be 0. This represents a statically fixed goal. In the equivariant mode, the Gallilean symmetry is employed and the observation is reduced to the error between the reference and state in both position and velocity (6-dim). 
