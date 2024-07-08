@@ -13,7 +13,8 @@ from flax.core import freeze
 import os
 
 from models import ActorCritic
-from jax_envs import PointState, PointParticlePosition, PointParticleConstantVelocity
+from base_envs import EnvState, PointState
+from particle_envs import PointParticlePosition, PointParticleConstantVelocity
 import argparse
 
 def select_seed_params(params, seed_index=0):

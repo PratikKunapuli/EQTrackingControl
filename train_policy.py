@@ -14,7 +14,8 @@ from typing import Sequence, NamedTuple, Any, Tuple, Union, Optional
 import numpy as np
 import os
 
-from jax_envs import PointParticlePosition, PointState, PointParticleConstantVelocity, PointVelocityState, EnvState
+# from base_envs import PointState, PointVelocityState, EnvState
+from particle_envs import PointParticlePosition, PointParticleConstantVelocity
 from models import ActorCritic
 from wrappers import LogWrapper
 

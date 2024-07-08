@@ -14,8 +14,7 @@ from gymnax.environments.spaces import gymnax_space_to_gym_space as convert_spac
 
 import numpy as np
 
-
-from jax_envs import EnvState
+from base_envs import EnvState
 
 @struct.dataclass
 class LogEnvState:
@@ -126,4 +125,4 @@ if __name__ == "__main__":
     obs, reward, done, info = env_gym.step(env_gym.action_space.sample())
 
     print(obs, reward, done, info)
-    
+
