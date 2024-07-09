@@ -113,7 +113,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
 if __name__ == "__main__":
     # Test creating env and using gymnax to gym wrapper
 
-    from jax_envs import PointParticlePosition
+    from particle_envs import PointParticlePosition
     from gymnasium.utils import env_checker
 
     env = PointParticlePosition()

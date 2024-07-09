@@ -31,7 +31,7 @@ class PointVelocityState(EnvState):
 
 class PointParticleBase:
     def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, terminate_on_error=True, 
-                  reward_q = 0.01, reward_r = 0.0001, termination_bound = 10, terminal_reward = -100, **kwargs):
+                  reward_q = 0.01, reward_r = 0.0001, termination_bound = 10., terminal_reward = 0.0, **kwargs):
         self.state_mean = jnp.array([0., 0., 0.])
         self.state_cov = jnp.eye(3) * state_cov_scalar
         self.ref_mean = jnp.array([0., 0., 0.])
@@ -87,8 +87,10 @@ class PointParticleBase:
         return jnp.logical_or(world_cond, time_exceeded)
     
     def _is_terminal_error(self, env_state):
-        outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos)**2 > self.termination_bound)
-        exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
+        # outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos)**2 > self.termination_bound)
+        # exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
+        outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > self.termination_bound)
+        exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > self.termination_bound)
 
         return jnp.logical_or(outside_world_bounds, exceeded_error_velocity)
 

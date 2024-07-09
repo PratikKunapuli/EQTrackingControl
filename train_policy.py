@@ -238,12 +238,12 @@ def parse_args(config):
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
     parser.add_argument("--terminate-on-error", default=True, dest="TERMINATE_ON_ERROR", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Whether to terminate the episode on error")
-    parser.add_argument("--termination-bound", type=float, default=10.0, help="Bound for termination")
-    parser.add_argument("--reward_q", type=float, default=0.01, help="Q value for reward. Positive. ")
-    parser.add_argument("--reward_r", type=float, default=0.0001, help="R value for reward. Positive. ")
-    parser.add_argument("--terminal-reward", type=float, default=-100, help="Reward for terminal state, only when error is exceeded")
-    parser.add_argument("--state_cov_scalar", type=float, default=0.5, help="State covariance scalar for initial conditions")
-    parser.add_argument("--ref_cov_scalar", type=float, default=3.0, help="Reference covariance scalar for initial conditions")
+    parser.add_argument("--termination-bound", type=float, dest="TERMINATION_BOUND" ,default=10.0, help="Bound for termination")
+    parser.add_argument("--reward_q", type=float, default=0.01,dest="REWARD_Q", help="Q value for reward. Positive. ")
+    parser.add_argument("--reward_r", type=float, default=0.0001, dest="REWARD_R", help="R value for reward. Positive. ")
+    parser.add_argument("--terminal-reward", type=float, default=0.0, dest="TERMINAL_REWARD", help="Reward for terminal state, only when error is exceeded")
+    parser.add_argument("--state_cov_scalar", type=float, default=0.5, dest="STATE_COV_SCALAR", help="State covariance scalar for initial conditions")
+    parser.add_argument("--ref_cov_scalar", type=float, default=3.0, dest="REF_COV_SCALAR", help="Reference covariance scalar for initial conditions")
     
     # PPO specific arguments
     parser.add_argument("--lr", type=float, dest="LR", default=3e-4, help="Learning rate")
