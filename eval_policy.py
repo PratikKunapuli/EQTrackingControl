@@ -16,6 +16,7 @@ from models import ActorCritic
 from base_envs import EnvState, PointState
 from particle_envs import PointParticlePosition, PointParticleConstantVelocity
 import argparse
+import ast
 
 def select_seed_params(params, seed_index=0):
     """
@@ -77,11 +78,17 @@ if __name__ == "__main__":
     # Define the model
     model = ActorCritic(action_dim=3)
     model.init(rng, jnp.zeros((1, 3)))
+    
+    if("model" in args.load_path):
+        load_path = os.path.abspath(args.load_path)
+        checkpoint_folder_path = os.path.dirname(load_path)
+    else:
+        load_path = os.path.join(os.path.abspath(args.load_path), "model_final/")
+        checkpoint_folder_path = os.path.abspath(args.load_path)
 
-    # load_path = os.path.abspath("./checkpoints/checkpoint_test_20/model_final/")
-    # load_path = os.path.abspath("./checkpoints/ppo_jax_3_layer_no_eq/model_final/")
-    # load_path = os.path.abspath("./checkpoints/ppo_jax_3_layer_eq/model_final/")
+    train_config = ast.literal_eval(open(checkpoint_folder_path+"/config.txt", "r").read())
     load_path = os.path.abspath(args.load_path)
+
 
     save_path_base = os.path.dirname(load_path)
     model_params = orbax_cp.PyTreeCheckpointer().restore(load_path)[0]['params']['params']
@@ -91,9 +98,11 @@ if __name__ == "__main__":
 
     # Create environment
     if args.env_name == "position":
-        env = PointParticlePosition(equivariant=args.equivariant)
+        env = PointParticlePosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], 
+                                    termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
     elif args.env_name == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=args.equivariant)
+        env = PointParticleConstantVelocity(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"],
+                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
     else:
         raise ValueError("Invalid environment name")
     
@@ -104,7 +113,7 @@ if __name__ == "__main__":
     init_carry = (env_states, model_params, obs, env_rng)
     carry, (env_states, rewards, dones, actions) = jax.lax.scan(rollout_step, init_carry, None, length=5000)
 
-
+    # (timesteps for each env, num_envs, data_size)
     pos = env_states.pos # This is of shape (100, 5, 3)
     ref_pos = env_states.ref_pos # This is of shape (100, 5, 3)
 

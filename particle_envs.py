@@ -55,15 +55,6 @@ class PointParticlePosition(PointParticleBase):
         return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
     
 
-    def _get_reward(self, env_state, action):
-        '''
-        Get reward from the environment state. 
-        Reward is defined as the "LQR" cost function: scaled position error and scaled velocity error
-        '''
-        state = env_state
-
-        return -0.01 * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - 0.0 * (jnp.linalg.norm(action)**2)
-
     def _get_obs(self, env_state):
         '''
         Get observation from the environment state. Remove time from the observation as it is not needed by the agent.

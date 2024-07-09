@@ -42,9 +42,11 @@ def make_train(config):
     # Create environment
     print("Terminate on error? : ", config["TERMINATE_ON_ERROR"])
     if config["env_name"] == "position":
-        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"])
+        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], 
+                                    termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
     elif config["env_name"] == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"])
+        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"],
+                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
     else:
         raise ValueError("Invalid environment name")
     env = LogWrapper(env)
@@ -236,6 +238,12 @@ def parse_args(config):
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
     parser.add_argument("--terminate-on-error", default=True, dest="TERMINATE_ON_ERROR", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Whether to terminate the episode on error")
+    parser.add_argument("--termination-bound", type=float, default=10.0, help="Bound for termination")
+    parser.add_argument("--reward_q", type=float, default=0.01, help="Q value for reward. Positive. ")
+    parser.add_argument("--reward_r", type=float, default=0.0001, help="R value for reward. Positive. ")
+    parser.add_argument("--terminal-reward", type=float, default=-100, help="Reward for terminal state, only when error is exceeded")
+    parser.add_argument("--state_cov_scalar", type=float, default=0.5, help="State covariance scalar for initial conditions")
+    parser.add_argument("--ref_cov_scalar", type=float, default=3.0, help="Reference covariance scalar for initial conditions")
     
     # PPO specific arguments
     parser.add_argument("--lr", type=float, dest="LR", default=3e-4, help="Learning rate")

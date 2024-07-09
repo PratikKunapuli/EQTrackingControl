@@ -30,7 +30,8 @@ class PointVelocityState(EnvState):
     ref_acc: jnp.ndarray
 
 class PointParticleBase:
-    def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, terminate_on_error=True, **kwargs):
+    def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, terminate_on_error=True, 
+                  reward_q = 0.01, reward_r = 0.0001, termination_bound = 10, terminal_reward = -100, **kwargs):
         self.state_mean = jnp.array([0., 0., 0.])
         self.state_cov = jnp.eye(3) * state_cov_scalar
         self.ref_mean = jnp.array([0., 0., 0.])
@@ -40,7 +41,13 @@ class PointParticleBase:
         self.max_time = max_time
         self.dt = dt
         self.equivariant = equivariant
+        
         self.terminate_on_error = terminate_on_error
+        self.termination_bound = termination_bound
+        self.terminal_reward = terminal_reward
+        self.reward_q = reward_q
+        self.reward_r = reward_r
+
         self.other_args = kwargs
 
     def _sample_random_ref_pos(self, key):
@@ -71,15 +78,31 @@ class PointParticleBase:
             
         # if any part of the state is outside the bounds of +- 5, then the episode is done
         # or if the time is greater than the max time
-        outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > 10.)
-        exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > 10.)
+        
         time_exceeded = env_state.time > self.max_time
 
-        world_cond = jnp.logical_or(outside_world_bounds, exceeded_error_velocity)
+        world_cond = self._is_terminal_error(env_state)
         world_cond = lax.select(self.terminate_on_error, world_cond, False)
 
         return jnp.logical_or(world_cond, time_exceeded)
+    
+    def _is_terminal_error(self, env_state):
+        outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos)**2 > self.termination_bound)
+        exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
 
+        return jnp.logical_or(outside_world_bounds, exceeded_error_velocity)
+
+    def _get_reward(self, env_state, action):
+        '''
+        Get reward from the environment state. 
+        Reward is defined as the "LQR" cost function: scaled position error and scaled velocity error
+        '''
+        state = env_state
+        termination_from_error = self._is_terminal_error(state)
+
+        terminal_reward = lax.select(termination_from_error, self.terminal_reward, 0.0)
+
+        return -self.reward_q * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) -self.reward_r * (jnp.linalg.norm(action)**2) + terminal_reward
 
     @property
     def num_actions(self) -> int:
