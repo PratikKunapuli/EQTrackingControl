@@ -71,13 +71,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    print("Running Equivariant?: ", args.equivariant)
-
     rng = jax.random.PRNGKey(0)
-
-    # Define the model
-    model = ActorCritic(action_dim=3)
-    model.init(rng, jnp.zeros((1, 3)))
     
     if("model" in args.load_path):
         load_path = os.path.abspath(args.load_path)
@@ -87,7 +81,17 @@ if __name__ == "__main__":
         checkpoint_folder_path = os.path.abspath(args.load_path)
 
     train_config = ast.literal_eval(open(checkpoint_folder_path+"/config.txt", "r").read())
+    args.equivariant = train_config["EQUIVARIANT"]
     load_path = os.path.abspath(args.load_path)
+
+    # print("\n\n\n")
+    # for key, value in train_config.items():
+    #     print(f"{key}: {value}")
+    # print("\n\n\n")
+
+    # Define the model
+    model = ActorCritic(action_dim=3, activation=train_config.get("ACTIVATION", "tanh"), num_layers=train_config.get("NUM_LAYERS", 3), num_nodes=train_config.get("NUM_NODES", 64))
+    model.init(rng, jnp.zeros((1, 3)))
 
 
     save_path_base = os.path.dirname(load_path)

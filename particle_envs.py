@@ -91,7 +91,8 @@ class PointParticlePosition(PointParticleBase):
         return new_point_state
 
     def reset(self, key):
-        env_state = self._reset(key)
+        key, reset_key = jrandom.split(key)
+        env_state = self._reset(reset_key)
         return env_state, self._get_obs(env_state)
     
     @property
@@ -170,16 +171,18 @@ class PointParticleConstantVelocity(PointParticleBase):
         '''
         Reset function for the environment. Returns the full env_state (state, key)
         '''
-        pos = jrandom.multivariate_normal(key, self.state_mean, self.state_cov)
+        key, pos_key, vel_key = jrandom.split(key, 3)
+        pos = jrandom.multivariate_normal(pos_key, self.state_mean, self.state_cov)
         # vel = jnp.zeros(3)
-        vel = jrandom.multivariate_normal(key, jnp.zeros(3), self.state_cov)
+        vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), self.state_cov)
 
         ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
 
         # ref_pos = lax.cond(self.predefined_ref_pos is None, 
         #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
         #                    lambda _: predefined_ref_pos, None)
-        ref_vel = jrandom.multivariate_normal(key, jnp.zeros(3), jnp.eye(3) * 0.5)
+        key, vel_key = jrandom.split(key)
+        ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), jnp.eye(3) * 0.5)
         ref_acc = jnp.zeros(3)
         time = 0.0
         new_key = jrandom.split(key)[0]
@@ -189,7 +192,8 @@ class PointParticleConstantVelocity(PointParticleBase):
         return new_point_state
     
     def reset(self, key):
-        env_state = self._reset(key)
+        key, reset_key = jrandom.split(key)
+        env_state = self._reset(reset_key)
         return env_state, self._get_obs(env_state)
     
     @property

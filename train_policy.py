@@ -66,7 +66,7 @@ def make_train(config):
     
     def train(rng):
         # Initialize network
-        network = ActorCritic(env.action_space().shape[0], activation=config["ACTIVATION"])
+        network = ActorCritic(env.action_space().shape[0], activation=config["ACTIVATION"], num_layers=config["NUM_LAYERS"], num_nodes=config["NUM_NODES"])
 
         rng, _rng = jax.random.split(rng)
         init_x = jnp.zeros(env.observation_space().shape)
@@ -244,6 +244,10 @@ def parse_args(config):
     parser.add_argument("--terminal-reward", type=float, default=0.0, dest="TERMINAL_REWARD", help="Reward for terminal state, only when error is exceeded")
     parser.add_argument("--state_cov_scalar", type=float, default=0.5, dest="STATE_COV_SCALAR", help="State covariance scalar for initial conditions")
     parser.add_argument("--ref_cov_scalar", type=float, default=3.0, dest="REF_COV_SCALAR", help="Reference covariance scalar for initial conditions")
+
+    # Model specific arguments
+    parser.add_argument("--num-layers", type=int, dest="NUM_LAYERS", default=3, help="Number of layers in the network")
+    parser.add_argument("--num-nodes", type=int, dest="NUM_NODES", default=64, help="Number of nodes in each layer")
     
     # PPO specific arguments
     parser.add_argument("--lr", type=float, dest="LR", default=3e-4, help="Learning rate")
@@ -290,6 +294,11 @@ if __name__ == "__main__":
     config = vars(config)
 
     print("Running with Equivariant: ", config['EQUIVARIANT'])
+
+    print("\n\n\n")
+    for k, v in config.items():
+        print(f"{k}: {v}")
+    print("\n\n\n")
 
     rng = jax.random.PRNGKey(config['seed'])
 

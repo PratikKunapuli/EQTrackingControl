@@ -54,7 +54,8 @@ class PointParticleBase:
         """
         Helper function to sample a random reference position from a multivariate normal distribution
         """
-        return jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov)
+        key, new_key = jrandom.split(key)
+        return jrandom.multivariate_normal(new_key, self.ref_mean, self.ref_cov)
     
     def _get_predefined_ref_pos(self, key):
         """
@@ -91,6 +92,7 @@ class PointParticleBase:
         # exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
         outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > self.termination_bound)
         exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > self.termination_bound)
+        # exceeded_error_velocity = False
 
         return jnp.logical_or(outside_world_bounds, exceeded_error_velocity)
 
