@@ -66,7 +66,7 @@ def parse_args():
     parser.add_argument("--equivariant", action="store_true", help="Whether to use the equivariant version of the environment")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--num-timesteps", type=int, default=5000, help="Number of timesteps to run the evaluation for")
-    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment to use for evaluation. position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity), random_walk_velocity (PointParticleRandomWalkVelocity), random_walk_accel (PointParticleRandomWalkAccel)")
+    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment to use for evaluation. position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity), random_walk_velocity (PointParticleRandomWalkVelocity)")
     parser.add_argument("--make-animation", action="store_true", help="Make 3D animation")
 
     return parser.parse_args()
@@ -101,6 +101,8 @@ if __name__ == "__main__":
     model_params = orbax_cp.PyTreeCheckpointer().restore(load_path)[0]['params']['params']
     model_params = select_seed_params(model_params)
 
+
+
     # Create environment
     if args.env_name == "position":
         env = PointParticlePosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"], 
@@ -133,8 +135,8 @@ if __name__ == "__main__":
 
     anim_pos_data = np.array(pos)
     anim_ref_pos_data = np.array(ref_pos)
-    np.save(save_path_base + "/pos_data.npy", pos)
-    np.save(save_path_base + "/ref_pos_data.npy", ref_pos)
+    np.save("./pos_data.npy", pos)
+    np.save("./ref_pos_data.npy", ref_pos)
 
     import matplotlib.pyplot as plt
 
@@ -144,8 +146,8 @@ if __name__ == "__main__":
         import matplotlib.animation as animation
         from matplotlib.pyplot import cm
 
-        anim_pos_data = anim_pos_data[:500, ...]
-        anim_ref_pos_data = anim_ref_pos_data[:500, ...]
+        anim_pos_data = anim_pos_data[:300, ...]
+        anim_ref_pos_data = anim_ref_pos_data[:300, ...]
 
         fig = plt.figure()
 
@@ -154,20 +156,6 @@ if __name__ == "__main__":
             for i in range(anim_pos_data[0].shape[0]):
                 scatter_points[0][i]._offsets3d = (anim_pos_data[frame][i,0:1], anim_pos_data[frame][i,1:2], anim_pos_data[frame][i,2:])
                 scatter_points[1][i]._offsets3d = (anim_ref_pos_data[frame][i,0:1], anim_ref_pos_data[frame][i,1:2], anim_ref_pos_data[frame][i,2:])
-
-                dyn_axis_limit = [
-                    (min(-5., anim_pos_data[frame, :, 0].min()), max(5., anim_pos_data[frame, :, 0].max()) ),
-                    (min(-5., anim_pos_data[frame, :, 1].min()), max(5., anim_pos_data[frame, :, 1].max()) ),
-                    (min(-5., anim_pos_data[frame, :, 2].min()), max(5., anim_pos_data[frame, :, 2].max()) ),
-                ]
-
-                scatter_points[0][i]._axes.set_xlim(dyn_axis_limit[0][0], dyn_axis_limit[0][1])
-                scatter_points[0][i]._axes.set_ylim(dyn_axis_limit[1][0], dyn_axis_limit[1][1])
-                scatter_points[0][i]._axes.set_zlim(dyn_axis_limit[2][0], dyn_axis_limit[2][1])
-
-                scatter_points[1][i]._axes.set_xlim(dyn_axis_limit[0][0], dyn_axis_limit[0][1])
-                scatter_points[1][i]._axes.set_ylim(dyn_axis_limit[1][0], dyn_axis_limit[1][1])
-                scatter_points[1][i]._axes.set_zlim(dyn_axis_limit[2][0], dyn_axis_limit[2][1])
             return scatter_points
 
         print("Animating trajectories.....")
@@ -175,23 +163,24 @@ if __name__ == "__main__":
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
 
+
         color_list = cm.rainbow(np.linspace(0, 1, anim_pos_data[0].shape[0]))
 
         scatter_points = ([ax.scatter(anim_pos_data[0][i, 0:1], anim_pos_data[0][i, 1:2], anim_pos_data[0][i, 2:], color=color, marker=".", linewidth=0.4) for i, color in zip(range(anim_pos_data[0].shape[0]), color_list)],
                           [ax.scatter(anim_ref_pos_data[0][i, 0:1], anim_ref_pos_data[0][i, 1:2], anim_ref_pos_data[0][i, 2:], color=color, marker="*", linewidth=0.4) for i, color in zip(range(anim_ref_pos_data[0].shape[0]), color_list)])
-        
+
 
         # Number of iterations
         total_frames = len(anim_pos_data)
 
         # Setting the axes properties
-        #ax.set_xlim3d([-5, 5])
+        ax.set_xlim3d([-5, 5])
         ax.set_xlabel('x-axis')
 
-        #ax.set_ylim3d([-5, 5])
+        ax.set_ylim3d([-5, 5])
         ax.set_ylabel('y-axis')
 
-        #ax.set_zlim3d([-5, 5])
+        ax.set_zlim3d([-5, 5])
         ax.set_zlabel('z-axis')
 
         ax.set_title('Particle Trajectory Animation')
@@ -199,7 +188,11 @@ if __name__ == "__main__":
         ani = animation.FuncAnimation(fig, animate_scatters, total_frames, fargs=(anim_pos_data, anim_ref_pos_data, scatter_points),
                                         interval=50, blit=False)
 
-        ani.save(save_path_base + "/paticle_animation.mp4", codec="libx264", bitrate=-1, fps=50, dpi=600)
+        #Writer = animation.writers["ffmpeg"]
+        #writer = Writer(fps=50, bitrate=-1, extra_args=["libx264",])
+        ani.save(save_path_base + "/scatter_animation.mp4", codec="libx264", bitrate=-1, fps=50, dpi=600)
+
+    # plt.show()
 
     # colors = plt.cm.jet(jnp.linspace(0, 1, args.num_envs))
     default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -303,7 +296,7 @@ if __name__ == "__main__":
         plt.suptitle(f"Action Curves for Env {i} \n Equivariant Model: {args.equivariant}")
         plt.tight_layout()
         plt.savefig(save_path_base+f"/actions_env_{i}.png", dpi=1000)
-        # plt.show()
+        # plt.show
 
     # Make a plot that shows the error between the particle position and the reference position and averages over all envs with mean and std. dev. shown
     errors = jnp.linalg.norm(pos - ref_pos, axis=-1)

@@ -29,9 +29,18 @@ class PointVelocityState(EnvState):
     ref_vel: jnp.ndarray
     ref_acc: jnp.ndarray
 
+@struct.dataclass
+class PointRandomWalkState(EnvState):
+    rnd_key: jnp.ndarray
+    pos: jnp.ndarray
+    vel: jnp.ndarray
+    ref_pos: jnp.ndarray
+    ref_vel: jnp.ndarray
+    ref_acc: jnp.ndarray
+
 class PointParticleBase:
     def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, terminate_on_error=True, 
-                  reward_q = 0.01, reward_r = 0.0001, termination_bound = 10., terminal_reward = 0.0, **kwargs):
+                  reward_q = 1e-2, reward_r = 1e-4, termination_bound = 10., terminal_reward = 0.0, reward_reach=0.1, **kwargs):
         self.state_mean = jnp.array([0., 0., 0.])
         self.state_cov = jnp.eye(3) * state_cov_scalar
         self.ref_mean = jnp.array([0., 0., 0.])
@@ -45,8 +54,11 @@ class PointParticleBase:
         self.terminate_on_error = terminate_on_error
         self.termination_bound = termination_bound
         self.terminal_reward = terminal_reward
+        self.reach_reward = reward_reach
         self.reward_q = reward_q
         self.reward_r = reward_r
+
+        self.epsilon_ball_radius = 1e-2
 
         self.other_args = kwargs
 
@@ -71,7 +83,7 @@ class PointParticleBase:
         '''
         return lax.select(done, self._reset(key), env_state)
     
-    def _is_terminal(self, env_state):
+    def _is_terminal(self, env_state, termination_bound = 10.):
         """
         Helper function to check if the environment state is terminal.
         If self.terminate_on_error is True, then the environment is terminal if the particle is outside the world bounds or exceeds the velocity error.
@@ -80,6 +92,8 @@ class PointParticleBase:
         # if any part of the state is outside the bounds of +- 5, then the episode is done
         # or if the time is greater than the max time
         
+        self.termination_bound = termination_bound
+
         time_exceeded = env_state.time > self.max_time
 
         world_cond = self._is_terminal_error(env_state)
@@ -96,7 +110,11 @@ class PointParticleBase:
 
         return jnp.logical_or(outside_world_bounds, exceeded_error_velocity)
 
-    def _get_reward(self, env_state, action):
+    def _is_terminal_reach(self, env_state):
+
+        return jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos) ** 2 < self.epsilon_ball_radius)
+
+    def _get_reward(self, env_state, action,):
         '''
         Get reward from the environment state. 
         Reward is defined as the "LQR" cost function: scaled position error and scaled velocity error
@@ -106,7 +124,10 @@ class PointParticleBase:
 
         terminal_reward = lax.select(termination_from_error, self.terminal_reward, 0.0)
 
-        return -self.reward_q * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) -self.reward_r * (jnp.linalg.norm(action)**2) + terminal_reward
+        dest_reached = self._is_terminal_reach(state)
+        dest_reach_reward = lax.select(dest_reached, self.reach_reward, 0.0)
+
+        return -self.reward_q * (jnp.linalg.norm(state.ref_pos - state.pos)**2 + jnp.linalg.norm(state.ref_vel - state.vel)**2) - self.reward_r * (jnp.linalg.norm(action)**2) + terminal_reward + dest_reach_reward
 
     @property
     def num_actions(self) -> int:
