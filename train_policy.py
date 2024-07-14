@@ -15,7 +15,7 @@ import numpy as np
 import os
 
 # from base_envs import PointState, PointVelocityState, EnvState
-from particle_envs import PointParticlePosition, PointParticleConstantVelocity
+from particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
 from models import ActorCritic
 from wrappers import LogWrapper
 
@@ -42,10 +42,19 @@ def make_train(config):
     # Create environment
     print("Terminate on error? : ", config["TERMINATE_ON_ERROR"])
     if config["env_name"] == "position":
-        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], 
+        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"], 
                                     termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
     elif config["env_name"] == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"],
+        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
+                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
+    elif config["env_name"] == "random_walk_position":
+        env = PointParticleRandomWalkPosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
+                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
+    elif config["env_name"] == "random_walk_velocity":
+        env = PointParticleRandomWalkVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
+                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
+    elif config["env_name"] == "random_walk_accel":
+        env = PointParticleRandomWalkAccel(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
                                            termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
     else:
         raise ValueError("Invalid environment name")
@@ -66,7 +75,7 @@ def make_train(config):
     
     def train(rng):
         # Initialize network
-        network = ActorCritic(env.action_space().shape[0], activation=config["ACTIVATION"], num_layers=config["NUM_LAYERS"], num_nodes=config["NUM_NODES"])
+        network = ActorCritic(env.action_space().shape[0], activation=config["ACTIVATION"], num_layers=config["NUM_LAYERS"], num_nodes=config["NUM_NODES"], out_activation=config["OUT_ACTIVATION"])
 
         rng, _rng = jax.random.split(rng)
         init_x = jnp.zeros(env.observation_space().shape)
@@ -227,10 +236,9 @@ def make_train(config):
 def parse_args(config):
     import argparse
     parser = argparse.ArgumentParser(description="Train PPO on PointParticlePosition")
-    parser.set_defaults(**config) # allows the config to remain the same 
     
     # Env specific arguments
-    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity)")
+    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity), random_walk_position (PointParticleRandomWalkPosition), random_walk_velocity (PointParticleRandomWalkVelocity), random_walk_accel (PointParticleRandomWalkAccel)")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--debug", default=False, dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
@@ -239,8 +247,9 @@ def parse_args(config):
     parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
     parser.add_argument("--terminate-on-error", default=True, dest="TERMINATE_ON_ERROR", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Whether to terminate the episode on error")
     parser.add_argument("--termination-bound", type=float, dest="TERMINATION_BOUND" ,default=10.0, help="Bound for termination")
-    parser.add_argument("--reward_q", type=float, default=0.01,dest="REWARD_Q", help="Q value for reward. Positive. ")
-    parser.add_argument("--reward_r", type=float, default=0.0001, dest="REWARD_R", help="R value for reward. Positive. ")
+    parser.add_argument("--reward_q", type=float, default=1e-2,dest="REWARD_Q", help="Q value for reward. Positive. ")
+    parser.add_argument("--reward_r", type=float, default=1e-4, dest="REWARD_R", help="R value for reward. Positive. ")
+    parser.add_argument("--reward_reach", type=float, default=0.1, dest="REWARD_REACH", help="Reward for reaching the hover point")
     parser.add_argument("--terminal-reward", type=float, default=0.0, dest="TERMINAL_REWARD", help="Reward for terminal state, only when error is exceeded")
     parser.add_argument("--state_cov_scalar", type=float, default=0.5, dest="STATE_COV_SCALAR", help="State covariance scalar for initial conditions")
     parser.add_argument("--ref_cov_scalar", type=float, default=3.0, dest="REF_COV_SCALAR", help="Reference covariance scalar for initial conditions")
@@ -262,11 +271,17 @@ def parse_args(config):
     parser.add_argument("--ent-coef", type=float, dest="ENT_COEF", default=0.0, help="Entropy coefficient")
     parser.add_argument("--vf-coef", type=float, dest="VF_COEF", default=0.5, help="Value function coefficient")
     parser.add_argument("--max-grad-norm", type=float, dest="MAX_GRAD_NORM", default=0.5, help="Maximum gradient norm")
-    parser.add_argument("--activation", type=str, dest="ACTIVATION", default="tanh", help="Activation function to use")
+    parser.add_argument("--activation", type=str, dest="ACTIVATION", default="leaky_relu", help="Activation function to use")
+    parser.add_argument("--out-activation", type=str, dest="OUT_ACTIVATION", default="hard_tanh", help="Activation function for actor network")
     parser.add_argument("--anneal-lr", dest="ANNEAL_LR", action="store_true", help="Anneal the learning rate")
     parser.add_argument('--no-anneal-lr', dest='ANNEAL_LR', action='store_false', help="Do not anneal the learning rate")
+    parser.add_argument("--add-desc", default="", help="Additional description about experiment to type in config file.")
+
+    # Parse config file, after above, else, user given params get overriden
+    parser.set_defaults(**config) # allows the config to remain the same
 
     return parser.parse_args()
+
 if __name__ == "__main__":
     import time
     import matplotlib.pyplot as plt
@@ -285,9 +300,14 @@ if __name__ == "__main__":
         "ENT_COEF": 0.0,
         "VF_COEF": 0.5,
         "MAX_GRAD_NORM": 0.5,
-        "ACTIVATION": "tanh",
+        "ACTIVATION": "leaky_relu",
+        "OUT_ACTIVATION": "hard_tanh",
         "ANNEAL_LR": True,
         "DEBUG": False,
+        "REWARD_Q": 1e-2,
+        "REWARD_R": 1e-4,
+        "REWARD_REACH": 0.1,
+        "TERMINAL_REWARD": -25.,
     }
 
     config = parse_args(config)

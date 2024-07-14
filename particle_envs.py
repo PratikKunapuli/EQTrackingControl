@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 from jax import random as jrandom
 from jax import lax
@@ -7,7 +8,7 @@ from functools import partial
 
 from gymnax.environments import spaces
 
-from base_envs import PointParticleBase, PointState, PointVelocityState
+from base_envs import PointParticleBase, PointState, PointVelocityState, PointRandomWalkState
 
 
 class PointParticlePosition(PointParticleBase):
@@ -203,6 +204,326 @@ class PointParticleConstantVelocity(PointParticleBase):
     @property
     def EnvState(self):
         return PointVelocityState
+    
+    def observation_space(self) -> spaces.Box:
+        n_obs = 9 if self.equivariant else 15
+        low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
+        high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
+
+        return spaces.Box(low, high, (n_obs,), jnp.float32)
+
+
+class PointParticleRandomWalkPosition(PointParticleBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        print("Creating PointParticleRandomWalkPosition environment with Equivaraint: ", self.equivariant)
+
+    def step(self, key, env_state, action):
+        '''
+        Step function for the environment. Arguments are defined as follows:
+
+        key: random_key for the environmen (need )
+        env_state: current state of the environment (both true state of the particle and the reference state) [pos, vel, ref_pos, ref_vel]
+        action: action taken by the agent (velocity of the particle)
+
+        returns: tuple: (env_state, observation, reward, done, info)
+        '''
+        # clip action
+        action = jnp.clip(action, -1., 1.)
+
+        state = env_state
+        # update particle position
+        vel = state.vel + action * self.dt
+        pos = state.pos + vel * self.dt
+
+        # update reference position
+        ref_acc = env_state.ref_acc
+
+        _, vel_key = jrandom.split(state.rnd_key)
+        ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), 5e-2 * jnp.eye(3,))
+
+        ref_pos = state.ref_pos + ref_vel * self.dt
+
+        # update time
+        time = state.time + self.dt
+
+        done = self._is_terminal(env_state)
+
+        env_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=vel_key)
+
+        # Reset the environment if the episode is done
+        # new_env_state = self._reset(key)
+        env_state = lax.cond(done, self._reset, lambda _: env_state, key)
+
+        # added stop gradient to match gymnax environments 
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+
+    def _get_obs(self, env_state):
+        '''
+        Get observation from the environment state. Remove time from the observation as it is not needed by the agent.
+        '''
+        state = env_state
+
+        if not self.equivariant:
+            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
+            return non_eq_state
+        else:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+
+    def _reset(self, key):
+        '''
+        Reset function for the environment. Returns the full env_state (state, key)
+        '''
+        key, pos_key, vel_key = jrandom.split(key, 3)
+        pos = jrandom.multivariate_normal(pos_key, self.state_mean, self.state_cov)
+        # vel = jnp.zeros(3)
+        vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), self.state_cov)
+
+        ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
+
+        # ref_pos = lax.cond(self.predefined_ref_pos is None, 
+        #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
+        #                    lambda _: predefined_ref_pos, None)
+        key, vel_key = jrandom.split(key)
+        ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        ref_acc = jnp.zeros(3,)
+        time = 0.0
+        new_key = jrandom.split(key)[0]
+
+        new_point_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=new_key)
+
+        return new_point_state
+    
+    def reset(self, key):
+        key, reset_key = jrandom.split(key)
+        env_state = self._reset(reset_key)
+        return env_state, self._get_obs(env_state)
+    
+    @property
+    def name(self)-> str:
+        return "PointParticleRandomWalkPosition"
+    
+    @property
+    def EnvState(self):
+        return PointRandomWalkState
+    
+    def observation_space(self) -> spaces.Box:
+        n_obs = 9 if self.equivariant else 15
+        low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
+        high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
+
+        return spaces.Box(low, high, (n_obs,), jnp.float32)
+
+
+class PointParticleRandomWalkVelocity(PointParticleBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        print("Creating PointParticleRandomWalkVelocity environment with Equivaraint: ", self.equivariant)
+
+    def step(self, key, env_state, action):
+        '''
+        Step function for the environment. Arguments are defined as follows:
+
+        key: random_key for the environmen (need )
+        env_state: current state of the environment (both true state of the particle and the reference state) [pos, vel, ref_pos, ref_vel]
+        action: action taken by the agent (velocity of the particle)
+
+        returns: tuple: (env_state, observation, reward, done, info)
+        '''
+        # clip action
+        action = jnp.clip(action, -1., 1.)
+
+        state = env_state
+        # update particle position
+        vel = state.vel + action * self.dt
+        pos = state.pos + vel * self.dt
+
+        # update reference position
+        #ref_acc = env_state.ref_acc
+
+        _, acc_key = jrandom.split(state.rnd_key)
+        ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), 0.5 * jnp.eye(3,))
+
+        ref_vel = state.ref_vel + ref_acc * self.dt
+        ref_pos = state.ref_pos + ref_vel * self.dt
+
+        # update time
+        time = state.time + self.dt
+
+        done = self._is_terminal(env_state)
+
+        env_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=acc_key)
+
+        # Reset the environment if the episode is done
+        # new_env_state = self._reset(key)
+        env_state = lax.cond(done, self._reset, lambda _: env_state, key)
+
+        # added stop gradient to match gymnax environments 
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+
+    def _get_obs(self, env_state):
+        '''
+        Get observation from the environment state. Remove time from the observation as it is not needed by the agent.
+        '''
+        state = env_state
+
+        if not self.equivariant:
+            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
+            return non_eq_state
+        else:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+
+    def _reset(self, key):
+        '''
+        Reset function for the environment. Returns the full env_state (state, key)
+        '''
+        key, pos_key, vel_key = jrandom.split(key, 3)
+        pos = jrandom.multivariate_normal(pos_key, self.state_mean, self.state_cov)
+        # vel = jnp.zeros(3)
+        vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), self.state_cov)
+
+        ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
+
+        # ref_pos = lax.cond(self.predefined_ref_pos is None, 
+        #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
+        #                    lambda _: predefined_ref_pos, None)
+        key, vel_key, acc_key = jrandom.split(key, 3)
+        ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        time = 0.0
+        new_key = jrandom.split(key)[0]
+
+        new_point_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=new_key)
+
+        return new_point_state
+    
+    def reset(self, key):
+        key, reset_key = jrandom.split(key)
+        env_state = self._reset(reset_key)
+        return env_state, self._get_obs(env_state)
+    
+    @property
+    def name(self)-> str:
+        return "PointParticleRandomWalkVelocity"
+    
+    @property
+    def EnvState(self):
+        return PointRandomWalkState
+    
+    def observation_space(self) -> spaces.Box:
+        n_obs = 9 if self.equivariant else 15
+        low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
+        high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
+
+        return spaces.Box(low, high, (n_obs,), jnp.float32)
+    
+
+
+class PointParticleRandomWalkAccel(PointParticleBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        print("!!!!!!!!!!!!!!!EXPERIMENTAL!!!!!!!!!!!! Under progress......")
+        print("Creating PointParticleRandomWalkAccel environment with Equivaraint: ", self.equivariant)
+
+    def step(self, key, env_state, action):
+        '''
+        Step function for the environment. Arguments are defined as follows:
+
+        key: random_key for the environmen (need )
+        env_state: current state of the environment (both true state of the particle and the reference state) [pos, vel, ref_pos, ref_vel]
+        action: action taken by the agent (velocity of the particle)
+
+        returns: tuple: (env_state, observation, reward, done, info)
+        '''
+        # clip action
+        action = jnp.clip(action, -1., 1.)
+
+        state = env_state
+        # update particle position
+        vel = state.vel + action * self.dt
+        pos = state.pos + vel * self.dt
+
+        # update reference position
+        #ref_acc = env_state.ref_acc
+
+        _, jerk_key = jrandom.split(state.rnd_key)
+        ref_jerk = jrandom.multivariate_normal(jerk_key, jnp.zeros(3,), 1e-7 * jnp.eye(3))
+
+        ref_acc = state.ref_acc + ref_jerk * self.dt
+        ref_vel = state.ref_vel + ref_acc * self.dt
+        ref_pos = state.ref_pos + ref_vel * self.dt
+
+        #jax.debug.print("ref_pos: {ref_pos}, ref_vel: {ref_vel}, ref_acc: {ref_acc}, ref_jerk: {ref_jerk}", ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, ref_jerk=ref_jerk)
+
+        # update time
+        time = state.time + self.dt
+
+        # Increase termination bound, as trajectories can extend largely
+        done = self._is_terminal(env_state,)
+
+        env_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=jerk_key)
+
+        # Reset the environment if the episode is done
+        # new_env_state = self._reset(key)
+        env_state = lax.cond(done, self._reset, lambda _: env_state, key)
+
+        # added stop gradient to match gymnax environments 
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+
+    def _get_obs(self, env_state):
+        '''
+        Get observation from the environment state. Remove time from the observation as it is not needed by the agent.
+        '''
+        state = env_state
+
+        if not self.equivariant:
+            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
+            return non_eq_state
+        else:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+
+    def _reset(self, key):
+        '''
+        Reset function for the environment. Returns the full env_state (state, key)
+        '''
+        key, pos_key, vel_key = jrandom.split(key, 3)
+        pos = jrandom.multivariate_normal(pos_key, self.state_mean, self.state_cov)
+        # vel = jnp.zeros(3)
+        vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3), self.state_cov)
+
+        ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, key)
+
+        # ref_pos = lax.cond(self.predefined_ref_pos is None, 
+        #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
+        #                    lambda _: predefined_ref_pos, None)
+        key, vel_key, acc_key = jrandom.split(key, 3)
+        ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        time = 0.0
+        new_key = jrandom.split(key)[0]
+
+        new_point_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=new_key)
+
+        return new_point_state
+    
+    def reset(self, key):
+        key, reset_key = jrandom.split(key)
+        env_state = self._reset(reset_key)
+        return env_state, self._get_obs(env_state)
+    
+    @property
+    def name(self)-> str:
+        return "PointParticleRandomWalkAcceleration"
+    
+    @property
+    def EnvState(self):
+        return PointRandomWalkState
     
     def observation_space(self) -> spaces.Box:
         n_obs = 9 if self.equivariant else 15
