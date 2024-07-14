@@ -464,7 +464,7 @@ class PointParticleRandomWalkAccel(PointParticleBase):
         time = state.time + self.dt
 
         # Increase termination bound, as trajectories can extend largely
-        done = self._is_terminal(env_state, termination_bound=50.)
+        done = self._is_terminal(env_state,)
 
         env_state = PointRandomWalkState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, rnd_key=jerk_key)
 

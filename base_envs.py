@@ -83,7 +83,7 @@ class PointParticleBase:
         '''
         return lax.select(done, self._reset(key), env_state)
     
-    def _is_terminal(self, env_state, termination_bound = 10.):
+    def _is_terminal(self, env_state,):
         """
         Helper function to check if the environment state is terminal.
         If self.terminate_on_error is True, then the environment is terminal if the particle is outside the world bounds or exceeds the velocity error.
@@ -91,8 +91,6 @@ class PointParticleBase:
             
         # if any part of the state is outside the bounds of +- 5, then the episode is done
         # or if the time is greater than the max time
-        
-        self.termination_bound = termination_bound
 
         time_exceeded = env_state.time > self.max_time
 
