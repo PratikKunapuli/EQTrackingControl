@@ -38,6 +38,17 @@ class PointRandomWalkState(EnvState):
     ref_vel: jnp.ndarray
     ref_acc: jnp.ndarray
 
+@struct.dataclass
+class PointLissajousTrackingState(EnvState):
+    pos: jnp.ndarray
+    vel: jnp.ndarray
+    ref_pos: jnp.ndarray
+    ref_vel: jnp.ndarray
+    ref_acc: jnp.ndarray
+    amplitudes: jnp.ndarray
+    frequencies: jnp.ndarray
+    phases: jnp.ndarray
+
 class PointParticleBase:
     def __init__ (self, ref_pos=None, equivariant=False, state_cov_scalar=0.5, ref_cov_scalar=3.0, dt=0.05, max_time=100.0, terminate_on_error=True, 
                   reward_q = 1e-2, reward_r = 1e-4, termination_bound = 10., terminal_reward = 0.0, reward_reach=0.1, **kwargs):
