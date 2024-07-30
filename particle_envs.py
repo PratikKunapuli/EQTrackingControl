@@ -536,14 +536,23 @@ class PointParticleRandomWalkAccel(PointParticleBase):
 def lissajous_1D(t, amp, freq, phase):
     return amp * jnp.sin(freq * t + phase)
 
+def lissajous_3D(t, amplitudes, frequencies, phases):
+    x = amplitudes[0] * jnp.sin(2.0*jnp.pi * frequencies[0] * t + phases[0])
+    y = amplitudes[1] * jnp.sin(2.0*jnp.pi * frequencies[1] * t + phases[1])
+    z = amplitudes[2] * jnp.sin(2.0*jnp.pi * frequencies[2] * t + phases[2])
+    return jnp.stack([x, y, z], axis=1)
+
 class PointParticleLissajousTracking(PointParticleBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         print("Creating PointParticleLissajousTracking environment with Equivaraint: ", self.equivariant)
-        self.reference_pos_func = lissajous_1D
-        self.reference_vel_func = jax.jit(jax.grad(lissajous_1D, 0))
-        self.reference_acc_func = jax.jit(jax.grad(jax.grad(lissajous_1D, 0), 0))
+        # self.reference_pos_func = lissajous_1D
+        # self.reference_vel_func = jax.jit(jax.grad(lissajous_1D, 0))
+        # self.reference_acc_func = jax.jit(jax.grad(jax.grad(lissajous_1D, 0), 0))
+        self.ref_pos_fn = jax.jit(lissajous_3D)
+        self.ref_vel_fn = jax.jit(jax.jacfwd(lissajous_3D))
+        self.ref_acc_fn = jax.jit(jax.jacfwd(jax.jacfwd(lissajous_3D)))
 
     
     def _reset(self, key):
@@ -561,11 +570,15 @@ class PointParticleLissajousTracking(PointParticleBase):
         phases = jrandom.uniform(phase_key, (3,), minval=0., maxval=2.0 * jnp.pi)
 
 
-        ref_pos = jnp.hstack([self.reference_pos_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_pos_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_pos_func(0.0, amplitudes[2], frequencies[2], phases[2])])
-        ref_vel = jnp.hstack([self.reference_vel_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_vel_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_vel_func(0.0, amplitudes[2], frequencies[2], phases[2])])
-        ref_acc = jnp.hstack([self.reference_acc_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_acc_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_acc_func(0.0, amplitudes[2], frequencies[2], phases[2])])
+        # ref_pos = jnp.hstack([self.reference_pos_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_pos_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_pos_func(0.0, amplitudes[2], frequencies[2], phases[2])])
+        # ref_vel = jnp.hstack([self.reference_vel_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_vel_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_vel_func(0.0, amplitudes[2], frequencies[2], phases[2])])
+        # ref_acc = jnp.hstack([self.reference_acc_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_acc_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_acc_func(0.0, amplitudes[2], frequencies[2], phases[2])])
 
         time = 0.0
+
+        ref_pos = self.ref_pos_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
+        ref_vel = self.ref_vel_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
+        ref_acc = self.ref_acc_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
 
         new_point_state = PointLissajousTrackingState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time, amplitudes=amplitudes, frequencies=frequencies, phases=phases)
 
@@ -595,10 +608,13 @@ class PointParticleLissajousTracking(PointParticleBase):
         # update time
         time = state.time + self.dt
 
-        ref_pos = jnp.hstack([self.reference_pos_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_pos_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_pos_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
-        ref_vel = jnp.hstack([self.reference_vel_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_vel_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_vel_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
-        ref_acc = jnp.hstack([self.reference_acc_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_acc_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_acc_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
+        # ref_pos = jnp.hstack([self.reference_pos_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_pos_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_pos_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
+        # ref_vel = jnp.hstack([self.reference_vel_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_vel_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_vel_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
+        # ref_acc = jnp.hstack([self.reference_acc_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_acc_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_acc_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
 
+        ref_pos = self.ref_pos_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
+        ref_vel = self.ref_vel_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
+        ref_acc = self.ref_acc_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
 
         # Increase termination bound, as trajectories can extend largely
         done = self._is_terminal(env_state,)
