@@ -1,5 +1,5 @@
 <h1 align="center">
-  <b>Point Particle Environments in JAX</b><br>
+  <b>Symmetry-Aware Trajectory Tracking Controllers with RL</b><br>
 </h1>
 
 <p align="center">
