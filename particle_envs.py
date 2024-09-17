@@ -66,6 +66,7 @@ class PointParticlePosition(PointParticleBase):
             non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel])
             return non_eq_state
         else:
+            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             return eq_state
 
@@ -166,6 +167,8 @@ class PointParticleConstantVelocity(PointParticleBase):
             return non_eq_state
         else:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, state.ref_acc])
+
             return eq_state
 
     def _reset(self, key):
@@ -207,6 +210,7 @@ class PointParticleConstantVelocity(PointParticleBase):
     
     def observation_space(self) -> spaces.Box:
         n_obs = 9 if self.equivariant else 15
+        # n_obs = 12 if self.equivariant else 15
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
@@ -374,7 +378,8 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
             non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
             return non_eq_state
         else:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, state.ref_acc])
             return eq_state
 
     def _reset(self, key):
@@ -415,7 +420,8 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
         return PointRandomWalkState
     
     def observation_space(self) -> spaces.Box:
-        n_obs = 9 if self.equivariant else 15
+        # n_obs = 9 if self.equivariant else 15
+        n_obs = 12 if self.equivariant else 15
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
