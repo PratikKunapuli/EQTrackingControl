@@ -678,24 +678,24 @@ if __name__ == "__main__":
     # next_env_states, next_obs, reward, done, info = jax.vmap(env.step)(env_states, jnp.ones((10,3)))
     # print(next_obs)
 
-    env = SE3QuadPosition()
-    env_state, obs = env.reset(key)
-    print(env_state)
-    print(obs)
+    # env = SE3QuadPosition()
+    # env_state, obs = env.reset(key)
+    # print(env_state)
+    # print(obs)
 
-    obs_buffer = []
+    # obs_buffer = []
 
-    def rollout_body(carry, unused):
-        key, env_state, obs = carry
-        action = jrandom.multivariate_normal(key, jnp.zeros(4), jnp.eye(4) * 0.1)
-        env_state, obs, reward, done, info = env.step(key, env_state, action)
-        return (key, env_state, obs), obs
+    # def rollout_body(carry, unused):
+    #     key, env_state, obs = carry
+    #     action = jrandom.multivariate_normal(key, jnp.zeros(4), jnp.eye(4) * 0.1)
+    #     env_state, obs, reward, done, info = env.step(key, env_state, action)
+    #     return (key, env_state, obs), obs
     
-    # Rollout for 100 steps
-    _, obs_buffer = lax.scan(rollout_body, (key, env_state, obs), jnp.arange(100))
+    # # Rollout for 100 steps
+    # _, obs_buffer = lax.scan(rollout_body, (key, env_state, obs), jnp.arange(100))
 
-    print(obs_buffer.shape) # (100, 4, 3) - 100 steps, 4 observations (pos, vel, ref_pos, ref_vel), 3 dimensions
-    print(obs_buffer[0]) # Initial observation
-    print(obs_buffer[-1]) # Final observation
+    # print(obs_buffer.shape) # (100, 4, 3) - 100 steps, 4 observations (pos, vel, ref_pos, ref_vel), 3 dimensions
+    # print(obs_buffer[0]) # Initial observation
+    # print(obs_buffer[-1]) # Final observation
 
     

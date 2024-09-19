@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jax import random as jrandom
 from jax import lax
 from jax import jit
+from jax.scipy.spatial.transform import Rotation
 
 from typing import Any, Dict, Optional, Tuple, Union
 from functools import partial
