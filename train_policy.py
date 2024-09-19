@@ -15,7 +15,7 @@ import numpy as np
 import os
 
 # from base_envs import PointState, PointVelocityState, EnvState
-from particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
+from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
 from models import ActorCritic
 from wrappers import LogWrapper
 

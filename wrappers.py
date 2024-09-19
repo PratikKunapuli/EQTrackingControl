@@ -14,7 +14,7 @@ from gymnax.environments.spaces import gymnax_space_to_gym_space as convert_spac
 
 import numpy as np
 
-from base_envs import EnvState
+from envs.base_envs import EnvState
 
 @struct.dataclass
 class LogEnvState:
@@ -113,7 +113,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
 if __name__ == "__main__":
     # Test creating env and using gymnax to gym wrapper
 
-    from particle_envs import PointParticlePosition
+    from envs.particle_envs import PointParticlePosition
     from gymnasium.utils import env_checker
 
     env = PointParticlePosition()
