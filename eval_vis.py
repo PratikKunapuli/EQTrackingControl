@@ -101,14 +101,19 @@ if __name__ == "__main__":
     model_params = select_seed_params(model_params, args.train_seed)
 
     
-
+    import time
     env_state, obs = env.reset(rng)
 
-    print("Observation: ", obs)
-    print("State: ", env_state)
+    step = 0
+    while step < 10:
+        start = time.time()
+        pi, value = model.apply({'params': model_params}, obs)
+        action = pi.mean()
+        end = time.time()
 
-    pi, value = model.apply({'params': model_params}, obs)
-    action = pi.mean()
+        print("Time taken: ", end-start)
+        print("Action: ", action)
 
-    print("Action: ", action)
+        env_state, obs, reward, done, info = env.step(rng, env_state, action)
+        step += 1
 
