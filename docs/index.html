@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems">
+    <meta name="keywords" content="Equivariance, Reinforcement Learning, Control">
     <title>EQ Tracking Control</title>
     <style>
         body {
@@ -27,14 +30,235 @@
             color: gray;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+    rel="stylesheet">
+
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+
 </head>
 <body>
-    <div class="container">
-        <div class="title">Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems</div>
-        <div class="authors">
-            Jake Welde, Nishanth Rao, Pratik Kunapuli, Dinesh Jayaraman, and Vijay Kumar
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
         </div>
-        <div class="coming-soon">Coming Soon!</div>
+        <div class="navbar-menu">
+          <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+            <a class="navbar-item" href="https://pratikkunapuli.github.io">
+            <span class="icon">
+                <i class="fas fa-home"></i>
+            </span>
+            </a>
+      
+            <div class="navbar-item has-dropdown is-hoverable">
+              <a class="navbar-link">
+                More Research
+              </a>
+              <div class="navbar-dropdown">
+              </div>
+            </div>
+          </div>
+      
+        </div>
+    </nav>
+    
+    
+    <section class="hero">
+        <div class="hero-body">
+          <div class="container is-max-desktop">
+            <div class="columns is-centered">
+              <div class="column has-text-centered">
+                <h1 class="title is-1 publication-title">Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems</h1>
+                <div class="is-size-5 publication-authors">
+                  <span class="author-block">
+                    <a href="https://jakewelde.com/">Jake Welde</a><sup>*</sup>,</span>
+                  <span class="author-block">
+                    <a href="https://www.grasp.upenn.edu/people/nishanth-rao/">Nishanth Rao</a><sup>*</sup>,</span>
+                  <span class="author-block">
+                    <a href="https://pratikkunapuli.github.io">Pratik Kunapuli</a><sup>*</sup>,
+                  </span>
+                  <span class="author-block">
+                    <a href="https://www.seas.upenn.edu/~dineshj/">Dinesh Jayaraman</a>,
+                  </span>
+                  <span class="author-block">
+                    <a href="https://www.kumarrobotics.org/">Vijay Kumar</a>,
+                  </span>
+                </div>
+      
+                <div class="is-size-5 publication-authors">
+                  <span class="author-block">University of Pennsylvania, GRASP Lap</span>
+                </div>
+      
+                <div class="column has-text-centered">
+                  <div class="publication-links">
+                    <!-- PDF Link. -->
+                    <span class="link-block">
+                      <a href="https://arxiv.org/pdf/2409.11238"
+                         class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </span>
+                        <span>Paper</span>
+                      </a>
+                    </span>
+                    <span class="link-block">
+                      <a href="https://arxiv.org/abs/2409.11238"
+                         class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                            <i class="ai ai-arxiv"></i>
+                        </span>
+                        <span>arXiv</span>
+                      </a>
+                    </span>
+                    <!-- Video Link. -->
+                    <span class="link-block">
+                      <a href="#"
+                         class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                            <i class="fab fa-youtube"></i>
+                        </span>
+                        <span>Coming Soon!</span>
+                      </a>
+                    </span>
+                    <!-- Code Link. -->
+                    <span class="link-block">
+                      <a href="https://github.com/PratikKunapuli/EQTrackingControl"
+                         class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                            <i class="fab fa-github"></i>
+                        </span>
+                        <span>Code</span>
+                        </a>
+                    </span>
+                  </div>
+      
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    <section class="section">
+        <div class="container is-max-desktop">
+          <!-- Abstract. -->
+          <div class="columns is-centered has-text-centered">
+            <div class="column is-four-fifths">
+              <h2 class="title is-3">Abstract</h2>
+              <div class="content has-text-justified">
+                <p>
+                    Tracking controllers enable robotic systems to accurately follow planned reference trajectories. In particular, reinforcement learning (RL) has shown promise in the synthesis of controllers for systems with complex dynamics and modest online compute budgets. However, the poor sample efficiency of RL and the challenges of reward design make training slow and sometimes unstable, especially for high-dimensional systems. 
+                    In this work, we leverage the inherent Lie group symmetries of robotic systems with a floating base to mitigate these challenges when learning tracking controllers. We model a general tracking problem as a Markov decision process (MDP) that captures the evolution of both the physical and reference states. 
+                    Next, we prove that symmetry in the underlying dynamics and running costs leads to an MDP homomorphism, a mapping that allows a policy trained on a lower-dimensional "quotient" MDP to be lifted to an optimal tracking controller for the original system. 
+                    We compare this symmetry-informed approach to an unstructured baseline, using Proximal Policy Optimization (PPO) to learn tracking controllers for three systems: the Particle (a forced point mass), the Astrobee (a fullyactuated space robot), and the Quadrotor (an underactuated system). Results show that a symmetry-aware approach both accelerates training and reduces tracking error after the same number of training steps.
+                </p>
+              </div>
+            </div>
+          </div>
+          <!--/ Abstract. -->
+      
+          <!-- Paper video. -->
+          <div class="columns is-centered has-text-centered">
+            <div class="column is-four-fifths">
+              <h2 class="title is-3">Video</h2>
+              <div class="publication-video">
+              </div>
+            </div>
+          </div>
+          <!--/ Paper video. -->
+        </div>
+    </section>
+      
+      
+    <section class="section">
+    <div class="container is-max-desktop">
+    
+        <div class="columns is-centered">
+    
+        <!-- Methods / Theory -->
+        <div class="column">
+            <div class="content">
+            <h2 class="title is-3">Methods</h2>
+            <p>
+                Explaination coming soon!
+            </p>
+            </div>
+        </div>
+        <!--/ Methods / Theory -->
+    
+        <!-- Results -->
+        <div class="column">
+            <h2 class="title is-3">Results</h2>
+            <div class="columns is-centered">
+            <div class="column content">
+                <p>
+                Coming soon!
+                </p>
+            </div>
+    
+            </div>
+        </div>
+        </div>
+        <!--/ Results -->
     </div>
+    </section>
+    
+    
+    <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+        <h2 class="title">BibTeX</h2>
+        <pre><code>@misc{welde2024leveragingsymmetryacceleratelearning,
+            title={Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems}, 
+            author={Jake Welde and Nishanth Rao and Pratik Kunapuli and Dinesh Jayaraman and Vijay Kumar},
+            year={2024},
+            eprint={2409.11238},
+            archivePrefix={arXiv},
+            primaryClass={cs.RO},
+            url={https://arxiv.org/abs/2409.11238}, 
+      }</code></pre>
+    </div>
+    </section>
+    
+    
+    <footer class="footer">
+    <div class="container">
+        <div class="content has-text-centered">
+        <a class="icon-link"
+            href="./static/videos/nerfies_paper.pdf">
+            <i class="fas fa-file-pdf"></i>
+        </a>
+        <a class="icon-link" href="https://github.com/keunhong" class="external-link" disabled>
+            <i class="fab fa-github"></i>
+        </a>
+        </div>
+        <div class="columns is-centered">
+        <div class="column is-8">
+            <div class="content">
+            <p>
+                This website is licensed under a <a rel="license"
+                                                    href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+                Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+            <p>
+                This means you are free to borrow the <a
+                href="https://github.com/nerfies/nerfies.github.io">source code</a> of this website,
+                we just ask that you link back to this page in the footer.
+                Please remember to remove the analytics code included in the header of the website which
+                you do not want on your website.
+            </p>
+            </div>
+        </div>
+        </div>
+    </div>
+    </footer>
 </body>
 </html></div>
