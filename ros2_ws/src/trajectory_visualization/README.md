@@ -6,6 +6,6 @@ To run the ROS2-based visualization:
 
 ```source install/setup.bash```
 
-```rviz2 src/trajectory_visualization/config.rviz```
+```rviz2 -d src/trajectory_visualization/config.rviz```
 
 ```ros2 run trajectory_visualization visualize```
