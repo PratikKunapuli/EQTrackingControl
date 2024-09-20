@@ -174,9 +174,11 @@ if __name__ == "__main__":
     ref_pos = equivariant_env_states.ref_pos
     ref_rotm = Rotation.from_matrix(equivariant_env_states.ref_rotm).as_quat()
 
-    # print("Baseline Pos: ", baseline_pos.shape)
-    # print("Baseline Rotm: ", baseline_rotm.shape)
-    # print("Equivariant Pos: ", equivariant_pos.shape)
-    # print("Equivariant Rotm: ", equivariant_rotm.shape)
-    # print("Ref Pos: ", ref_pos.shape)
-    # print("Ref Rotm: ", ref_rotm.shape)
+    save_path = "./ros2_ws/src/trajectory_visualization/trajectory_visualization/data/astrobee/"
+    np.save(save_path+"baseline_pos.npy", np.asarray(baseline_pos))
+    np.save(save_path+"baseline_rotm.npy", np.asarray(baseline_rotm))
+    np.save(save_path+"equivariant_pos.npy", np.asarray(equivariant_pos))
+    np.save(save_path+"equivariant_rotm.npy", np.asarray(equivariant_rotm))
+    np.save(save_path+"ref_pos.npy", np.asarray(ref_pos))
+    np.save(save_path+"ref_rotm.npy", np.asarray(ref_rotm))
+
