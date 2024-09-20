@@ -1,3 +1,13 @@
+import rclpy
+from rclpy.node import Node
+
+from std_msgs.msg import String
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import TransformBroadcaster
+
+from math import sin, cos
+import numpy as np
+
 import jax
 import jax.numpy as jnp
 import orbax.checkpoint as orbax_cp
@@ -28,7 +38,7 @@ def parse_args():
     parser.add_argument("--env", type=str, default=None, required=True, help="Environment to visualize. Options: \{particle, astrobee, quadrotor\}. ")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for environment. ")
     # parser.add_argument("--load-path", type=str, default=None, required=True, help="Path to load model from. ")
-    parser.add_argument("--train-seed", type=int, default=0, help="Model seed index from training to load. Deffault = 0.")
+    parser.add_argument("--train-seed", type=int, default=0, help="Model seed index from training to load. Default = 0.")
 
     return parser.parse_args()
 
@@ -79,6 +89,80 @@ def equivariant_rollout_step(carry, unused):
     actions = model_call(equivariant_model, model_params, obs)
     env_states, obs, rewards, dones, infos = env_step(equivariant_env, env_states, actions, rng)
     return (env_states, model_params, obs, rng), (env_states, rewards, dones, actions)
+
+
+class MinimalPublisher(Node):
+
+    def __init__(self, ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, real_time_factor = 1.0, frame_rate = 20.0):
+        super().__init__('visualizer')
+        self.frame_rate = frame_rate
+        self.publisher_ = self.create_publisher(String, 'topic', 10)
+        timer_period = 1.0/(frame_rate * real_time_factor)  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.time = 0
+        self.index = 0
+
+        self.ref_pos = ref_pos # (2000, 3)
+        self.ref_quat = ref_quat # (2000, 4)
+        self.baseline_pos = baseline_pos # (2000, 3)
+        self.baseline_quat = baseline_quat # (2000, 4)
+        self.eq_pos = eq_pos # (2000, 3)
+        self.eq_quat = eq_quat # (2000, 4)
+
+        # Initialize the transform broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+    def timer_callback(self):
+
+        self.get_logger().info('t=%f' % self.time)
+        self.time += 1.0 / self.frame_rate
+        self.index += 1
+        if self.index >= 2000:
+            self.index = 0
+
+        # TODO: replace all these p's and q's with real data!
+        t = self.time
+
+
+        # publish all transforms
+        self.send_pose('reference/body',self.ref_pos[self.index],self.ref_quat[self.index])
+        self.send_pose('symmetry/body',self.eq_pos[self.index],self.eq_quat[self.index])
+        self.send_pose('baseline/body',self.baseline_pos[self.index],self.baseline_quat[self.index])
+
+    def send_pose(self, frame, p, q):
+
+        t = TransformStamped()
+
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'world'
+        t.child_frame_id = frame
+
+        t.transform.translation.x = p[0]
+        t.transform.translation.y = p[1]
+        t.transform.translation.z = p[2]
+
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        # Send the transformation
+        self.tf_broadcaster.sendTransform(t)
+
+def main(ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, args=None):
+    rclpy.init(args=args)
+
+    minimal_publisher = MinimalPublisher(ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat)
+
+    rclpy.spin(minimal_publisher)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    minimal_publisher.destroy_node()
+    rclpy.shutdown()
+
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -174,9 +258,6 @@ if __name__ == "__main__":
     ref_pos = equivariant_env_states.ref_pos
     ref_rotm = Rotation.from_matrix(equivariant_env_states.ref_rotm).as_quat()
 
-    # print("Baseline Pos: ", baseline_pos.shape)
-    # print("Baseline Rotm: ", baseline_rotm.shape)
-    # print("Equivariant Pos: ", equivariant_pos.shape)
-    # print("Equivariant Rotm: ", equivariant_rotm.shape)
-    # print("Ref Pos: ", ref_pos.shape)
-    # print("Ref Rotm: ", ref_rotm.shape)
+    print("Rollout complete, visualizing...")
+
+    main(ref_pos, ref_rotm, baseline_pos, baseline_rotm, equivariant_pos, equivariant_rotm)

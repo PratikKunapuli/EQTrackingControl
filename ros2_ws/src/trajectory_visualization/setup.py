@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'visualize = trajectory_visualization.visualize:main'
+            'visualize = trajectory_visualization.visualize:main',
+            'eval_visualize = trajectory_visualization.eval_visualize:main'
         ],
     },
 )
