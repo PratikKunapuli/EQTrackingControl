@@ -553,14 +553,11 @@ class PointParticleLissajousTracking(PointParticleBase):
         super().__init__(**kwargs)
 
         print("Creating PointParticleLissajousTracking environment with Equivaraint: ", self.equivariant)
-        # self.reference_pos_func = lissajous_1D
-        # self.reference_vel_func = jax.jit(jax.grad(lissajous_1D, 0))
-        # self.reference_acc_func = jax.jit(jax.grad(jax.grad(lissajous_1D, 0), 0))
         self.ref_pos_fn = jax.jit(lissajous_3D)
         self.ref_vel_fn = jax.jit(jax.jacfwd(lissajous_3D))
         self.ref_acc_fn = jax.jit(jax.jacfwd(jax.jacfwd(lissajous_3D)))
 
-    
+
     def _reset(self, key):
         '''
         Reset function for the environment. Returns the full env_state (state, key)
@@ -572,13 +569,12 @@ class PointParticleLissajousTracking(PointParticleBase):
 
 
         amplitudes = jrandom.uniform(amp_key, (3,), minval=-5., maxval=5.)
-        frequencies = jrandom.uniform(freq_key, (3,), minval=0.1, maxval=1.0)
+        frequencies = jrandom.uniform(freq_key, (3,), minval=0.01, maxval=0.05)
         phases = jrandom.uniform(phase_key, (3,), minval=0., maxval=2.0 * jnp.pi)
 
-
-        # ref_pos = jnp.hstack([self.reference_pos_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_pos_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_pos_func(0.0, amplitudes[2], frequencies[2], phases[2])])
-        # ref_vel = jnp.hstack([self.reference_vel_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_vel_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_vel_func(0.0, amplitudes[2], frequencies[2], phases[2])])
-        # ref_acc = jnp.hstack([self.reference_acc_func(0.0, amplitudes[0], frequencies[0], phases[0]), self.reference_acc_func(0.0, amplitudes[1], frequencies[1], phases[1]), self.reference_acc_func(0.0, amplitudes[2], frequencies[2], phases[2])])
+        # amplitudes = jnp.array([ 1.36172305,  2.68769884, -2.41660407])
+        # frequencies = jnp.array([0.01837562, 0.02134107, 0.01045938])
+        # phases = jnp.array([0.6374367 , 1.99830445, 0.79015325])
 
         time = 0.0
 
@@ -593,20 +589,19 @@ class PointParticleLissajousTracking(PointParticleBase):
     def step(self, key, env_state, action):
         '''
         Step function for the environment. Arguments are defined as follows:
-
         key: random_key for the environmen (need )
         env_state: current state of the environment (both true state of the particle and the reference state) [pos, vel, ref_pos, ref_vel]
         action: action taken by the agent (velocity of the particle)
-
         returns: tuple: (env_state, observation, reward, done, info)
         '''
         # clip action
-        action = jnp.clip(action, -1., 1.)
+        if self.equivariant == 4 or self.equivariant == 5: action = action + env_state.ref_acc
+        if self.clip_actions: action = jnp.clip(action, -1., 1.)
 
         state = env_state
         # update particle position
         vel = state.vel + action * self.dt
-        pos = state.pos + vel * self.dt
+        pos = state.pos + state.vel * self.dt
 
         # update reference position
         #ref_acc = env_state.ref_acc
@@ -614,13 +609,10 @@ class PointParticleLissajousTracking(PointParticleBase):
         # update time
         time = state.time + self.dt
 
-        # ref_pos = jnp.hstack([self.reference_pos_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_pos_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_pos_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
-        # ref_vel = jnp.hstack([self.reference_vel_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_vel_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_vel_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
-        # ref_acc = jnp.hstack([self.reference_acc_func(time, state.amplitudes[0], state.frequencies[0], state.phases[0]), self.reference_acc_func(time, state.amplitudes[1], state.frequencies[1], state.phases[1]), self.reference_acc_func(time, state.amplitudes[2], state.frequencies[2], state.phases[2])])
-
         ref_pos = self.ref_pos_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
         ref_vel = self.ref_vel_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
         ref_acc = self.ref_acc_fn(jnp.array([time]), state.amplitudes, state.frequencies, state.phases).squeeze()
+
 
         # Increase termination bound, as trajectories can extend largely
         done = self._is_terminal(env_state,)
@@ -632,8 +624,8 @@ class PointParticleLissajousTracking(PointParticleBase):
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
-    
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action, ref_acc), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+
     def reset(self, key):
         key, reset_key = jrandom.split(key)
         env_state = self._reset(reset_key)
@@ -645,22 +637,45 @@ class PointParticleLissajousTracking(PointParticleBase):
         '''
         state = env_state
 
-        if not self.equivariant:
+        if self.equivariant == 0:
             non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
             return non_eq_state
-        else:
+        elif self.equivariant == 1:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, state.ref_acc])
+            return eq_state
+        elif self.equivariant == 2:
+            eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+        elif self.equivariant == 3:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
             return eq_state
+        elif self.equivariant == 4:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel,])
+            return eq_state
+        elif self.equivariant == 5:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel,])
+            return eq_state
+        else:
+            print("Invalid Equivariance Type!")
+            raise NotImplementedError
+
     @property
     def name(self)-> str:
         return "PointParticleLissajousTracking"
-    
+
     @property
     def EnvState(self):
         return PointLissajousTrackingState
-    
+
     def observation_space(self) -> spaces.Box:
-        n_obs = 9 if self.equivariant else 15
+        
+        if self.equivariant == 0: n_obs = 15
+        elif self.equivariant == 1 or self.equivariant == 2: n_obs = 12
+        elif self.equivariant == 3 or self.equivariant == 5: n_obs = 9
+        elif self.equivariant == 4: n_obs = 6
+        else: raise NotImplementedError
+
+        #n_obs = 12 if self.equivariant else 15
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 

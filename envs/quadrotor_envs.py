@@ -632,7 +632,7 @@ class SE2xRQuadLissajous(SE2xRQuadBase):
 
         return new_point_state
 
-    def reset(self, key, traj_index):
+    def reset(self, key, traj_index=None):
         key, reset_key = jrandom.split(key)
         env_state = self._reset(reset_key, traj_index=traj_index)
         return env_state, self._get_obs(env_state)
