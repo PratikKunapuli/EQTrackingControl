@@ -7,7 +7,7 @@ Panels:
         - /Grid1
         - /Symmetry1
       Splitter Ratio: 0.2598540186882019
-    Tree Height: 401
+    Tree Height: 361
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -207,7 +207,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 1.8560726642608643
+      Distance: 5.764679431915283
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1

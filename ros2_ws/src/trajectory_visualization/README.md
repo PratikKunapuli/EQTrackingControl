@@ -1,4 +1,4 @@
-To run the ROS2-based visualization:
+To run the ROS2-based visualization (`<robot>` is either `astrobee`, `quadrotor`, or `particle`):
 
 ```cd ros2_ws```
 
@@ -6,6 +6,6 @@ To run the ROS2-based visualization:
 
 ```source install/setup.bash```
 
-```rviz2 -d src/trajectory_visualization/config.rviz```
+```rviz2 -d src/trajectory_visualization/<robot>.rviz```
 
-```ros2 run trajectory_visualization visualize```
+```ros2 run trajectory_visualization eval_visualize --args <robot>```
