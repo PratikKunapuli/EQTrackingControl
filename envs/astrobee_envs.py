@@ -507,8 +507,8 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         #ref_pos = state.ref_pos + state.ref_vel * self.dt
         
         #ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 1e-2, state.frequencies * 0.1, state.phases).squeeze()
-        ref_omega_dot = self.ref_omega_dot_fn(jnp.array([time]), state.amplitudes * 5e-1, state.frequencies * 0.5, state.phases).squeeze()
-        ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 5e-1, state.frequencies * 0.5, state.phases).squeeze()
+        ref_omega_dot = self.ref_omega_dot_fn(jnp.array([time]), state.amplitudes * 2e-1, state.frequencies * 0.25, state.phases).squeeze()
+        ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 2e-1, state.frequencies * 0.25, state.phases).squeeze()
         #ref_omega = state.ref_omega + ref_omega_dot * self.dt
         ref_omega_hat = self._hat_map(ref_omega)
         ref_rotm = state.ref_rotm @ jsp.linalg.expm(ref_omega_hat * self.dt)
