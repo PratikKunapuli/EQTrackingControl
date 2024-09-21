@@ -2,7 +2,8 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
-from geometry_msgs.msg import TransformStamped
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from tf2_ros import TransformBroadcaster
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 
@@ -13,6 +14,8 @@ import os
 import sys
 
 from ament_index_python.packages import get_package_share_directory
+
+path = Path()
 
 class MinimalPublisher(Node):
 
@@ -27,7 +30,7 @@ class MinimalPublisher(Node):
         # self.symmetry_description_publisher_  = self.create_publisher(String, '/symmetry/robot_description', 10, qos_profile=latching_qos)
         # self.reference_description_publisher_ = self.create_publisher(String, '/reference/robot_description', 10)
         # self.baseline_description_publisher_  = self.create_publisher(String, '/baseline/robot_description', 10)
-        # self.symmetry_description_publisher_  = self.create_publisher(String, '/symmetry/robot_description', 10)
+        # self.symmetry_description_publisher_  = self.create_publisher(String, '/symmetry /robot_description', 10)
 
         timer_period = 1.0/(frame_rate * real_time_factor)  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -43,6 +46,12 @@ class MinimalPublisher(Node):
 
         # Initialize the transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
+        self.path_publisher1 = self.create_publisher(Path, '/path_ref', 10)
+        self.path_publisher2 = self.create_publisher(Path, '/path_eq', 10)
+        self.path_publisher3 = self.create_publisher(Path, '/path_baseline', 10)
+        self.path_ref = Path()
+        self.path_eq = Path()
+        self.path_baseline = Path()
 
         package_share_directory = get_package_share_directory('trajectory_visualization')
 
@@ -75,11 +84,67 @@ class MinimalPublisher(Node):
         # TODO: replace all these p's and q's with real data!
         t = self.time
 
-
+        pose_eq = PoseStamped()
+        pose_ref = PoseStamped()
+        pose_baseline = PoseStamped()
         # publish all transforms
         self.send_pose('reference/body',self.ref_pos[self.index],self.ref_quat[self.index])
         self.send_pose('symmetry/body',self.eq_pos[self.index],self.eq_quat[self.index])
         self.send_pose('baseline/body',self.baseline_pos[self.index],self.baseline_quat[self.index])
+
+        pose_eq.header.stamp = self.get_clock().now().to_msg()
+        pose_eq.header.frame_id = 'world'
+        pose_eq.pose.position.x = self.eq_pos[self.index][0]
+        pose_eq.pose.position.y = self.eq_pos[self.index][1]
+        pose_eq.pose.position.z = self.eq_pos[self.index][2]
+        pose_eq.pose.orientation.x = self.eq_quat[self.index][0]
+        pose_eq.pose.orientation.y = self.eq_quat[self.index][1]
+        pose_eq.pose.orientation.z = self.eq_quat[self.index][2]
+        pose_eq.pose.orientation.w = self.eq_quat[self.index][3]
+
+        pose_ref.header.stamp = self.get_clock().now().to_msg()
+        pose_ref.header.frame_id = 'world'
+        pose_ref.pose.position.x = self.ref_pos[self.index][0]
+        pose_ref.pose.position.y = self.ref_pos[self.index][1]
+        pose_ref.pose.position.z = self.ref_pos[self.index][2]
+        pose_ref.pose.orientation.x = self.ref_quat[self.index][0]
+        pose_ref.pose.orientation.y = self.ref_quat[self.index][1]
+        pose_ref.pose.orientation.z = self.ref_quat[self.index][2]
+        pose_ref.pose.orientation.w = self.ref_quat[self.index][3]
+
+        pose_baseline.header.stamp = self.get_clock().now().to_msg()
+        pose_baseline.header.frame_id = 'world'
+        pose_baseline.pose.position.x = self.baseline_pos[self.index][0]
+        pose_baseline.pose.position.y = self.baseline_pos[self.index][1]
+        pose_baseline.pose.position.z = self.baseline_pos[self.index][2]
+        pose_baseline.pose.orientation.x = self.baseline_quat[self.index][0]
+        pose_baseline.pose.orientation.y = self.baseline_quat[self.index][1]
+        pose_baseline.pose.orientation.z = self.baseline_quat[self.index][2]
+        pose_baseline.pose.orientation.w = self.baseline_quat[self.index][3]
+
+        self.path_ref.header.stamp = self.get_clock().now().to_msg()
+        self.path_ref.header.frame_id = 'world'
+        self.path_ref.poses.append(pose_eq)
+
+        self.path_eq.header.stamp = self.get_clock().now().to_msg()
+        self.path_eq.header.frame_id = 'world'
+        self.path_eq.poses.append(pose_ref)
+
+        self.path_baseline.header.stamp = self.get_clock().now().to_msg()
+        self.path_baseline.header.frame_id = 'world'
+        self.path_baseline.poses.append(pose_baseline)
+
+        if len(self.path_ref.poses) > 75:
+            del self.path_ref.poses[0] # keep the path length fixed to 20
+        if len(self.path_eq.poses) > 75:
+            del self.path_eq.poses[0] # keep the path length fixed to 20
+        if len(self.path_baseline.poses) > 75:
+            del self.path_baseline.poses[0] # keep the path length fixed to 20
+
+
+        self.path_publisher1.publish(self.path_ref)
+        self.path_publisher2.publish(self.path_eq)
+        self.path_publisher3.publish(self.path_baseline)
 
 
 
@@ -104,7 +169,7 @@ class MinimalPublisher(Node):
         # t.transform.rotation.y = q[2]
         # t.transform.rotation.z = q[3]
         # t.transform.rotation.w = q[0]
-
+        
         # Send the transformation
         self.tf_broadcaster.sendTransform(t)
 
