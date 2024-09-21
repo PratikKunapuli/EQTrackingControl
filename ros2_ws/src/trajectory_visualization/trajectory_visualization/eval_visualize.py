@@ -16,7 +16,7 @@ from ament_index_python.packages import get_package_share_directory
 
 class MinimalPublisher(Node):
 
-    def __init__(self, ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, real_time_factor = 0.5, frame_rate = 60.0):
+    def __init__(self, ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, real_time_factor = 1.0, frame_rate = 20.0):
         super().__init__('visualizer')
         self.frame_rate = frame_rate
 

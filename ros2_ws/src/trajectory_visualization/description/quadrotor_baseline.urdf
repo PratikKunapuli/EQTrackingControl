@@ -1,184 +1,39 @@
 <?xml version="1.0" ?>
 <robot name="Quadrotor"  xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- You can use https://github.com/openrr/urdf-viz to visualize and edit -->
-
   <material name="wash">
-    <color rgba="1 0 0 .15"/>
-  </material>
-  <material name="prop">
-    <color rgba="1 0 0 1"/>
-  </material>
-  <material name="motor">
-    <color rgba="0.5 0.5 .5 1.0"/>
-  </material>
-  <material name="carbon">
-    <color rgba="1.0 0.2 0.2 1.0"/>
-  </material>
-  <material name="standoff">
-    <color rgba="0.4 0.4 0.4 1.0"/>
-  </material>
-  <material name="battery">
-    <color rgba="0.2 0.2 0.7 1.0"/>
+    <color rgba=".8 .8 .8 .15"/>
   </material>
 
   <link name="baseline/body">
-    <inertial>
-      <mass value="0.556"/>
-      <inertia ixx="0.006063" ixy="0.000004" ixz="0.000000" iyy="0.00320" iyz="0.000028" izz="0.01"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </inertial>
     <visual>
-      <origin xyz="0 0 .001" rpy="0 0 0" />
+      <origin xyz=".17 0 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <box size="0.038 .088 .002" />
+        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
-      <material name="carbon" />
     </visual>
     <visual>
-      <origin xyz="0 0 .029" rpy="0 0 0" />
+      <origin xyz="0 .17 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <box size="0.038 .088 .002" />
+        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
-      <material name="carbon" />
-    </visual>
-    <!-- Gussets -->
-    <visual>
-      <origin xyz="0 .036 .005" rpy="0 0 0" />
-      <geometry>
-        <box size="0.038 .016 .006" />
-      </geometry>
-      <material name="carbon" />
     </visual>
     <visual>
-      <origin xyz="0 -.036 .005" rpy="0 0 0" />
+      <origin xyz="-.17 0 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <box size="0.038 .016 .006" />
+        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
-      <material name="carbon" />
-    </visual>
-    <!-- Arms -->
-    <visual>
-      <origin xyz=".042003 .062846 .004" rpy="0 0 -0.89238684654" />
-      <geometry>
-        <box size="0.010 .081295 .004" />
-      </geometry>
-      <material name="carbon" />
     </visual>
     <visual>
-      <origin xyz="-.042003 -.062846 .004" rpy="0 0 -0.89238684654" />
+      <origin xyz="0 -.17 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <box size="0.010 .081295 .004" />
+        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
-      <material name="carbon" />
     </visual>
     <visual>
-      <origin xyz="-.042003 .062846 .004" rpy="0 0 0.89238684654" />
       <geometry>
-        <box size="0.010 .081295 .004" />
+        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/hummingbird.dae"/>
       </geometry>
-      <material name="carbon" />
-    </visual>
-    <visual>
-      <origin xyz=".042003 -.062846 .004" rpy="0 0 0.89238684654" />
-      <geometry>
-        <box size="0.010 .081295 .004" />
-      </geometry>
-      <material name="carbon" />
-    </visual>
-    <!-- Battery -->
-    <visual>
-      <origin xyz="0 0 -.016" rpy="0 0 0" />
-      <geometry>
-        <box size=".035 .073 .032" />
-      </geometry>
-      <material name="battery" />
-    </visual>
-    <!-- Standoffs -->
-    <visual>
-      <origin xyz="0.014250 .040474 .018" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0025" length="0.0200"/>
-      </geometry>
-      <material name="standoff" />
-    </visual>
-    <visual>
-      <origin xyz="0.014250 -.040474 .018" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0025" length="0.0200"/>
-      </geometry>
-      <material name="standoff" />
-    </visual>
-    <visual>
-      <origin xyz="-0.014250 .040474 .018" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0025" length="0.0200"/>
-      </geometry>
-      <material name="standoff" />
-    </visual>
-    <visual>
-      <origin xyz="-0.014250 -.040474 .018" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0025" length="0.0200"/>
-      </geometry>
-      <material name="standoff" />
-    </visual>
-    <!-- Motors -->
-    <visual>
-      <origin xyz="0.0697565 0.0852185 0.01925" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0142" length="0.0245"/>
-      </geometry>
-      <material name="motor" />
-    </visual>
-    <visual>
-      <origin xyz="0.0697565 -0.0852185 0.01925" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0142" length="0.0245"/>
-      </geometry>
-      <material name="motor" />
-    </visual>
-    <visual>
-      <origin xyz="-0.0697565 0.0852185 0.01925" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0142" length="0.0245"/>
-      </geometry>
-      <material name="motor" />
-    </visual>
-    <visual>
-      <origin xyz="-0.0697565 -0.0852185 0.01925" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius=".0142" length="0.0245"/>
-      </geometry>
-      <material name="motor" />
-    </visual>
-    <visual>
-      <origin xyz="0.0697565 0.0852185 .034" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius=".06477" length="0.007"/>
-      </geometry>
-      <material name="wash" />
-    </visual>
-    <visual>
-      <origin xyz="-0.0697565 0.0852185 .034" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius=".06477" length="0.007"/>
-      </geometry>
-      <material name="wash" />
-    </visual>
-    <visual>
-      <origin xyz="-0.0697565 -0.0852185 .034" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius=".06477" length="0.007"/>
-      </geometry>
-      <material name="wash" />
-    </visual>
-    <visual>
-      <origin xyz="0.0697565 -0.0852185 .034" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius=".06477" length="0.007"/>
-      </geometry>
-      <material name="wash" />
     </visual>
   </link>
 
