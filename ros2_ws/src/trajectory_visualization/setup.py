@@ -25,7 +25,10 @@ setup(
         ('share/' + package_name, [
             'description/astrobee_reference.urdf',
             'description/astrobee_baseline.urdf',
-            'description/astrobee_symmetry.urdf'
+            'description/astrobee_symmetry.urdf',
+            'description/quadrotor_reference.urdf',
+            'description/quadrotor_baseline.urdf',
+            'description/quadrotor_symmetry.urdf'
             ]),
     ],
     install_requires=['setuptools'],
