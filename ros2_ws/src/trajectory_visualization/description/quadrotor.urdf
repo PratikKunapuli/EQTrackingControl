@@ -1,0 +1,402 @@
+<?xml version="1.0" ?>
+<robot name="Quadrotor"  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- You can use https://github.com/openrr/urdf-viz to visualize and edit -->
+
+  <material name="wash">
+    <color rgba="1 0 0 .15"/>
+  </material>
+  <material name="prop">
+    <color rgba="1 0 0 1"/>
+  </material>
+  <material name="motor">
+    <color rgba="0.5 0.5 .5 1.0"/>
+  </material>
+  <material name="carbon">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+  <material name="standoff">
+    <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+  <material name="battery">
+    <color rgba="0.2 0.2 0.7 1.0"/>
+  </material>
+
+  <link name="vehicle">
+    <inertial>
+      <mass value="0.556"/>
+      <inertia ixx="0.006063" ixy="0.000004" ixz="0.000000" iyy="0.00320" iyz="0.000028" izz="0.01"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .001" rpy="0 0 0" />
+      <geometry>
+        <box size="0.038 .088 .002" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 .029" rpy="0 0 0" />
+      <geometry>
+        <box size="0.038 .088 .002" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <!-- Gussets -->
+    <visual>
+      <origin xyz="0 .036 .005" rpy="0 0 0" />
+      <geometry>
+        <box size="0.038 .016 .006" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <visual>
+      <origin xyz="0 -.036 .005" rpy="0 0 0" />
+      <geometry>
+        <box size="0.038 .016 .006" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <!-- Arms -->
+    <visual>
+      <origin xyz=".042003 .062846 .004" rpy="0 0 -0.89238684654" />
+      <geometry>
+        <box size="0.010 .081295 .004" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <visual>
+      <origin xyz="-.042003 -.062846 .004" rpy="0 0 -0.89238684654" />
+      <geometry>
+        <box size="0.010 .081295 .004" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <visual>
+      <origin xyz="-.042003 .062846 .004" rpy="0 0 0.89238684654" />
+      <geometry>
+        <box size="0.010 .081295 .004" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <visual>
+      <origin xyz=".042003 -.062846 .004" rpy="0 0 0.89238684654" />
+      <geometry>
+        <box size="0.010 .081295 .004" />
+      </geometry>
+      <material name="carbon" />
+    </visual>
+    <!-- Battery -->
+    <visual>
+      <origin xyz="0 0 -.016" rpy="0 0 0" />
+      <geometry>
+        <box size=".035 .073 .032" />
+      </geometry>
+      <material name="battery" />
+    </visual>
+    <!-- Standoffs -->
+    <visual>
+      <origin xyz="0.014250 .040474 .018" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0025" length="0.0200"/>
+      </geometry>
+      <material name="standoff" />
+    </visual>
+    <visual>
+      <origin xyz="0.014250 -.040474 .018" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0025" length="0.0200"/>
+      </geometry>
+      <material name="standoff" />
+    </visual>
+    <visual>
+      <origin xyz="-0.014250 .040474 .018" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0025" length="0.0200"/>
+      </geometry>
+      <material name="standoff" />
+    </visual>
+    <visual>
+      <origin xyz="-0.014250 -.040474 .018" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0025" length="0.0200"/>
+      </geometry>
+      <material name="standoff" />
+    </visual>
+    <!-- Motors -->
+    <visual>
+      <origin xyz="0.0697565 0.0852185 0.01925" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0142" length="0.0245"/>
+      </geometry>
+      <material name="motor" />
+    </visual>
+    <visual>
+      <origin xyz="0.0697565 -0.0852185 0.01925" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0142" length="0.0245"/>
+      </geometry>
+      <material name="motor" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0697565 0.0852185 0.01925" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0142" length="0.0245"/>
+      </geometry>
+      <material name="motor" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0697565 -0.0852185 0.01925" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".0142" length="0.0245"/>
+      </geometry>
+      <material name="motor" />
+    </visual>
+  </link>
+
+  <link name="vicon"></link>
+  <joint name="vicon_joint" type="fixed">
+    <parent link="vehicle"/>
+    <child link="vicon"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+ </joint>
+  <link name="imu"></link>
+  <joint name="imu_joint" type="fixed">
+    <parent link="vehicle"/>
+    <child link="imu"/>
+    <origin rpy="3.1415926 0 0" xyz="0 .014 .015"/>
+  </joint>
+
+  <link name="end_effector"></link>
+  <joint name="ee_joint" type="fixed">
+    <parent link="vehicle"/>
+    <child link="end_effector"/>
+    <origin rpy="0 0 0" xyz="0 .5 0 "/>
+  </joint>
+  
+
+  <link name="propeller1">
+    <!-- <visual>
+      <origin xyz="0.032385 0 0" rpy=".35 0 0" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 0.0280462327 0" rpy=".35 0 2.09439510239" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 -0.0280462327 0" rpy=".35 0 4.18879020479" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".01" length="0.008"/>
+      </geometry>
+      <material name="prop" />
+    </visual> -->
+    <inertial>
+      <mass value="0.005"/>
+      <!-- Based on 5" prop weighing 5g and "thin rod" inertia formula, I = 1/12 m L^2 -->
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.00000672041" iyz="0" izz="0.00000672041"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </inertial>
+  </link>
+  <link name="propeller2">
+    <!-- <visual>
+      <origin xyz="0.032385 0 0" rpy="-.35 0 0" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 0.0280462327 0" rpy="-.35 0 2.09439510239" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 -0.0280462327 0" rpy="-.35 0 4.18879020479" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".01" length="0.008"/>
+      </geometry>
+      <material name="prop" />
+    </visual> -->
+    <inertial>
+      <mass value="0.005"/>
+      <!-- Based on 5" prop weighing 5g and "thin rod" inertia formula, I = 1/12 m L^2 -->
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.00000672041" iyz="0" izz="0.00000672041"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </inertial>
+  </link>
+  <link name="propeller3">
+    <!-- <visual>
+      <origin xyz="0.032385 0 0" rpy=".35 0 0" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 0.0280462327 0" rpy=".35 0 2.09439510239" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 -0.0280462327 0" rpy=".35 0 4.18879020479" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".01" length="0.008"/>
+      </geometry>
+      <material name="prop" />
+    </visual> -->
+    <inertial>
+      <mass value="0.005"/>
+      <!-- Based on 5" prop weighing 5g and "thin rod" inertia formula, I = 1/12 m L^2 -->
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.00000672041" iyz="0" izz="0.00000672041"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </inertial>
+  </link>
+  <link name="propeller4">
+    <!-- <visual>
+      <origin xyz="0.032385 0 0" rpy="-.35 0 0" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 0.0280462327 0" rpy="-.35 0 2.09439510239" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0161925 -0.0280462327 0" rpy="-.35 0 4.18879020479" />
+      <geometry>
+        <box size="0.06477 .015 .003" />
+      </geometry>
+      <material name="prop" />
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius=".01" length="0.008"/>
+      </geometry>
+      <material name="prop" />
+    </visual> -->
+    <inertial>
+      <mass value="0.005"/>
+      <!-- Based on 5" prop weighing 5g and "thin rod" inertia formula, I = 1/12 m L^2 -->
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.00000672041" iyz="0" izz="0.00000672041"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </inertial>
+  </link>
+
+  <!-- Prop indexing matches quadrants of X-Y plane -->
+
+  <!-- Thrust data thanks to Saibernard Yogendran -->
+  <!-- Note: 
+        - units of kf are N / (rad/s)^2 
+        - units of km are N m / (rad/s)^2 
+        - Sign convention is atypical - all motors are 
+          considered to have the same "positive" axis. 
+          Those that spin "backwards" in hover have a 
+          negative kf value.
+        -->
+  <joint name="prop1" type="continuous">
+    <parent link="vehicle"/>
+    <child link="propeller1"/>
+    <origin xyz="0.0697565 0.0852185 .034" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
+    <propeller kf="7.87815011e-7" km="1.46013346e-8" /> 
+  </joint>
+  <joint name="prop2" type="continuous">
+    <parent link="vehicle"/>
+    <child link="propeller2"/>
+    <origin xyz="-0.0697565 0.0852185 .034" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
+    <propeller kf="-7.87815011e-7" km="1.46013346e-8" /> 
+  </joint>
+  <joint name="prop3" type="continuous">
+    <parent link="vehicle"/>
+    <child link="propeller3"/>
+    <origin xyz="-.0697565 -.0852185 .034" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
+    <propeller kf="7.87815011e-7" km="1.46013346e-8" /> 
+  </joint>
+  <joint name="prop4" type="continuous">
+    <parent link="vehicle"/>
+    <child link="propeller4"/>
+    <origin xyz="0.0697565 -0.0852185 .034" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
+    <propeller kf="-7.87815011e-7" km="1.46013346e-8" /> 
+  </joint>
+
+
+  <!-- Just for visualization: a transparent link fixed to the vehicle for prop keepout -->
+  <link name="prop_keepout">
+    <visual>
+      <origin xyz="0.0697565 0.0852185 .034" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius=".06477" length="0.007"/>
+      </geometry>
+      <material name="wash" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0697565 0.0852185 .034" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius=".06477" length="0.007"/>
+      </geometry>
+      <material name="wash" />
+    </visual>
+    <visual>
+      <origin xyz="-0.0697565 -0.0852185 .034" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius=".06477" length="0.007"/>
+      </geometry>
+      <material name="wash" />
+    </visual>
+    <visual>
+      <origin xyz="0.0697565 -0.0852185 .034" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius=".06477" length="0.007"/>
+      </geometry>
+      <material name="wash" />
+    </visual>
+  </link>
+  <joint name="keepout" type="fixed">
+    <parent link="vehicle"/>
+    <child link="prop_keepout"/>
+    <origin rpy="0 0 0" xyz=" 0 0 0"/>
+  </joint>
+
+
+</robot>
