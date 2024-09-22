@@ -77,7 +77,7 @@ class MinimalPublisher(Node):
 
         now = self.get_clock().now().to_msg()
 
-        self.get_logger().info('Time t=%f' % self.time)
+        self.get_logger().info('Time t=%f Index i=%d' % (self.time, self.index))
         self.time += 1.0 / self.frame_rate
         self.index += 1
         if self.index >= 2000:
@@ -136,6 +136,7 @@ class MinimalPublisher(Node):
         self.path_baseline.header.stamp = now
         self.path_baseline.header.frame_id = 'world'
         self.path_baseline.poses.append(pose_baseline)
+
 
         if len(self.path_ref.poses) > 75:
             del self.path_ref.poses[0] # keep the path length fixed
