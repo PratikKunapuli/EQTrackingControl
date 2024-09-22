@@ -50,7 +50,7 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz_default_plugins/RobotModel
       Collision Enabled: false
-      Description File: /home/jake/Projects/EQTrackingControl/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/astrobee_reference.urdf
+      Description File: /home/pratikk/point_particle/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/astrobee_reference.urdf
       Description Source: File
       Description Topic:
         Depth: 5
@@ -76,7 +76,7 @@ Visualization Manager:
     - Alpha: 0.8999999761581421
       Class: rviz_default_plugins/RobotModel
       Collision Enabled: false
-      Description File: /home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/quadrotor_symmetry.urdf
+      Description File: /home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/quadrotor_symmetry.urdf
       Description Source: File
       Description Topic:
         Depth: 5
@@ -107,7 +107,7 @@ Visualization Manager:
     - Alpha: 0.8999999761581421
       Class: rviz_default_plugins/RobotModel
       Collision Enabled: false
-      Description File: /home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/quadrotor_baseline.urdf
+      Description File: /home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/quadrotor_baseline.urdf
       Description Source: File
       Description Topic:
         Depth: 5

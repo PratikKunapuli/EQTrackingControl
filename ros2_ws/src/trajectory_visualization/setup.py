@@ -41,7 +41,8 @@ setup(
     entry_points={
         'console_scripts': [
             'visualize = trajectory_visualization.visualize:main',
-            'eval_visualize = trajectory_visualization.eval_visualize:main'
+            'eval_visualize = trajectory_visualization.eval_visualize:main',
+            'eval_visualize_particle = trajectory_visualization.eval_visualize_particle:main'
         ],
     },
 )

@@ -9,30 +9,30 @@
     <visual>
       <origin xyz=".17 0 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
     </visual>
     <visual>
       <origin xyz="0 .17 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
     </visual>
     <visual>
       <origin xyz="-.17 0 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
     </visual>
     <visual>
       <origin xyz="0 -.17 0.005" rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/HummingbirdProp_baseline.dae"/>
       </geometry>
     </visual>
     <visual>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/hummingbird.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/hummingbird.dae"/>
       </geometry>
     </visual>
   </link>

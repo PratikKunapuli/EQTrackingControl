@@ -27,7 +27,7 @@
     <visual name="body_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/body.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/body.dae"/>
       </geometry>
     </visual>
     <collision name="body_collision">
@@ -40,19 +40,19 @@
     <visual name="pmc_port_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc.dae"/>
       </geometry>
     </visual>
     <visual name="pmc_port_bumper_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc_bumper.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc_bumper.dae"/>
       </geometry>
     </visual>
     <visual name="pmc_port_skin_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc_skin_honey.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc_skin_honey.dae"/>
       </geometry>
     </visual>
     <collision name="pmc_port_collision">
@@ -65,19 +65,19 @@
     <visual name="pmc_stbd_visual">
       <origin rpy="0 3.14 3.14" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc.dae"/>
       </geometry>
     </visual>
     <visual name="pmc_stbd_bumper_visual">
       <origin rpy="0 3.14 3.14" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc_bumper.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc_bumper.dae"/>
       </geometry>
     </visual>
     <visual name="pmc_stbd_skin_visual">
       <origin rpy="0 3.14 3.14" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/jake/Projects/EQTrackingControl/ros2_ws/src/trajectory_visualization/description/meshes/pmc_skin_honey.dae"/>
+        <mesh filename="file:///home/pratikk/point_particle/ros2_ws/src/trajectory_visualization/description/meshes/pmc_skin_honey.dae"/>
       </geometry>
     </visual>
     <collision name="pmc_stbd_collision">
