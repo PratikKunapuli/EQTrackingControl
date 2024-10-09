@@ -14,11 +14,23 @@ import os
 
 from rl.models import ActorCritic
 from envs.base_envs import EnvState, PointState
-from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
+import envs.registry as registry
 import argparse
 import ast
 
 import numpy as np
+
+def fill_defaults(config):
+    if "REWARD_Q_ROTM" not in config:
+        config["REWARD_Q_ROTM"] = 0.6
+    if "REWARD_Q_OMEGA" not in config:
+        config["REWARD_Q_OMEGA"] = 0.0001
+    if "USE_ABS_REWARD_FN" not in config:
+        config["USE_ABS_REWARD_FN"] = False
+    if "CLIP_ACTIONS" not in config:
+        config["CLIP_ACTIONS"] = True
+    if "REWARD_FN_TYPE" not in config:
+        config["REWARD_FN_TYPE"] = 1
 
 def select_seed_params(params, seed_index=0):
     """
@@ -84,6 +96,7 @@ if __name__ == "__main__":
         checkpoint_folder_path = os.path.abspath(args.load_path)
 
     train_config = ast.literal_eval(open(checkpoint_folder_path+"/config.txt", "r").read())
+    train_config = fill_defaults(train_config)
     args.equivariant = train_config["EQUIVARIANT"]
     load_path = os.path.abspath(args.load_path)
 
@@ -102,23 +115,12 @@ if __name__ == "__main__":
     model_params = select_seed_params(model_params)
 
     # Create environment
-    if args.env_name == "position":
-        env = PointParticlePosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"], 
-                                    termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_position":
-        env = PointParticleRandomWalkPosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_velocity":
-        env = PointParticleRandomWalkVelocity(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_accel":
-        env = PointParticleRandomWalkAccel(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    else:
-        raise ValueError("Invalid environment name")
+    env = registry.get_env_by_name(args.env_name, equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q_pos=train_config["REWARD_Q_POS"], 
+                                   reward_q_vel=train_config["REWARD_Q_VEL"], reward_q_rotm=train_config["REWARD_Q_ROTM"], reward_q_omega=train_config["REWARD_Q_OMEGA"], 
+                                   reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"], termination_bound=train_config["TERMINATION_BOUND"], 
+                                   terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"], 
+                                   use_des_action_in_reward=train_config["USE_DES_ACTION_IN_REWARD"], use_abs_reward_fn=train_config["USE_ABS_REWARD_FN"],
+                                   clip_actions=train_config["CLIP_ACTIONS"], reward_fn_type=train_config["REWARD_FN_TYPE"])
     
     env_rng = jax.random.split(rng, args.num_envs)
     env_states, obs = jax.vmap(env.reset)(env_rng)

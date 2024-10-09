@@ -29,24 +29,31 @@ class PointParticlePosition(PointParticleBase):
         '''
 
         # clip action
-        action = jnp.clip(action, -1., 1.)
+        if self.clip_actions: action = jnp.clip(action, -1., 1.)
 
         state = env_state
-
+        ref_acc = env_state.ref_acc
+        lqr_cmd = state.lqr_cmd
         # update particle position
         vel = state.vel + action * self.dt
-        pos = state.pos + vel * self.dt
+        pos = state.pos + state.vel * self.dt
 
         # update reference position
         ref_vel = state.ref_vel # Hardcoded - no moving reference
-        ref_pos = state.ref_pos + ref_vel * self.dt
+        ref_pos = state.ref_pos + state.ref_vel * self.dt
 
         # update time
         time = state.time + self.dt
 
         done = self._is_terminal(env_state)
 
-        env_state = PointState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, time=time)
+        #jax.debug.print("K = {K}", K=self.K)
+        e_vec = jnp.hstack((ref_pos, ref_vel)).reshape(6, 1) - jnp.hstack((pos, vel)).reshape(6, 1)
+        #jax.debug.print("e_vec: {e_vec}", e_vec=e_vec)
+        lqr_cmd = (self.gamma * self.K @ e_vec).squeeze()
+        #lqr_cmd = self.gamma * self.K @ (jnp.vstack((ref_pos, ref_vel)) - jnp.vstack(pos, vel))
+
+        env_state = PointState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, time=time, ref_acc=ref_acc, lqr_cmd=lqr_cmd)
 
         # Reset the environment if the episode is done
         # new_env_state = self._reset(key)
@@ -62,13 +69,31 @@ class PointParticlePosition(PointParticleBase):
         '''
         state = env_state
 
-        if not self.equivariant:
+        # if not self.equivariant:
+        #     non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel])
+        #     return non_eq_state
+        # else:
+        #     eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
+        #     #eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel])
+        #     #eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel])
+        #     return eq_state
+
+        if self.equivariant == 0:
             non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel])
             return non_eq_state
-        else:
-            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
+        elif self.equivariant == 1:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel])
+            return eq_state
+        elif self.equivariant == 2:
+            eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel])
+            return eq_state
+        elif self.equivariant == 3 or self.equivariant == 4:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             return eq_state
+        else:
+            print("Invalid Equivariance Type!")
+            raise NotImplementedError
+
 
     def _reset(self, key):
         '''
@@ -85,10 +110,12 @@ class PointParticlePosition(PointParticleBase):
         #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
         #                    lambda _: predefined_ref_pos, None)
         ref_vel = jnp.zeros(3) # hard coded to be non moving
+        ref_acc = jnp.zeros(3)
         time = 0.0
         new_key = jrandom.split(key)[0]
+        lqr_cmd = jnp.zeros(3)
 
-        new_point_state = PointState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, time=time)
+        new_point_state = PointState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, lqr_cmd=lqr_cmd, ref_acc=ref_acc, time=time)
 
         return new_point_state
 
@@ -106,7 +133,12 @@ class PointParticlePosition(PointParticleBase):
         return PointState
     
     def observation_space(self) -> spaces.Box:
-        n_obs = 6 if self.equivariant else 12 # this ONLY works since this is dependent on a constructor arg but this is bad behavior. 
+
+        if self.equivariant == 0: n_obs = 12
+        elif self.equivariant == 1 or self.equivariant == 2: n_obs = 9
+        elif self.equivariant == 3 or self.equivariant == 4: n_obs = 6
+        else: raise NotImplementedError
+
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
@@ -130,17 +162,17 @@ class PointParticleConstantVelocity(PointParticleBase):
         returns: tuple: (env_state, observation, reward, done, info)
         '''
         # clip action
-        action = jnp.clip(action, -1., 1.)
+        if self.clip_actions: action = jnp.clip(action, -1., 1.)
 
         state = env_state
         # update particle position
         vel = state.vel + action * self.dt
-        pos = state.pos + vel * self.dt
+        pos = state.pos + state.vel * self.dt
 
         # update reference position
-        ref_acc = env_state.ref_acc
-        ref_vel = state.ref_vel + ref_acc * self.dt
-        ref_pos = state.ref_pos + ref_vel * self.dt
+        ref_acc = state.ref_acc
+        ref_vel = state.ref_vel + state.ref_acc * self.dt
+        ref_pos = state.ref_pos + state.ref_vel * self.dt
 
         # update time
         time = state.time + self.dt
@@ -154,7 +186,7 @@ class PointParticleConstantVelocity(PointParticleBase):
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action, ref_acc), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
 
     def _get_obs(self, env_state):
         '''
@@ -162,14 +194,22 @@ class PointParticleConstantVelocity(PointParticleBase):
         '''
         state = env_state
 
-        if not self.equivariant:
-            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
+        if self.equivariant == 0:
+            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel])
             return non_eq_state
-        else:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
-            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, state.ref_acc])
-
+        elif self.equivariant == 1:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel])
             return eq_state
+        elif self.equivariant == 2:
+            eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel])
+            return eq_state
+        elif self.equivariant == 3 or self.equivariant == 4:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
+            return eq_state
+        else:
+            print("Invalid Equivariance Type!")
+            raise NotImplementedError
+
 
     def _reset(self, key):
         '''
@@ -191,7 +231,7 @@ class PointParticleConstantVelocity(PointParticleBase):
         time = 0.0
         new_key = jrandom.split(key)[0]
 
-        new_point_state = PointVelocityState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time)
+        new_point_state = PointVelocityState(pos=pos, vel=vel, ref_pos=ref_pos, ref_vel=ref_vel, ref_acc=ref_acc, time=time,)
 
         return new_point_state
     
@@ -209,8 +249,12 @@ class PointParticleConstantVelocity(PointParticleBase):
         return PointVelocityState
     
     def observation_space(self) -> spaces.Box:
-        n_obs = 9 if self.equivariant else 15
-        # n_obs = 12 if self.equivariant else 15
+        
+        if self.equivariant == 0: n_obs = 12
+        elif self.equivariant == 1 or self.equivariant == 2: n_obs = 9
+        elif self.equivariant == 3 or self.equivariant == 4: n_obs = 6
+        else: raise NotImplementedError
+
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
@@ -234,12 +278,12 @@ class PointParticleRandomWalkPosition(PointParticleBase):
         returns: tuple: (env_state, observation, reward, done, info)
         '''
         # clip action
-        action = jnp.clip(action, -1., 1.)
+        if self.clip_actions: action = jnp.clip(action, -1., 1.)
 
         state = env_state
         # update particle position
         vel = state.vel + action * self.dt
-        pos = state.pos + vel * self.dt
+        pos = state.pos + state.vel * self.dt
 
         # update reference position
         ref_acc = env_state.ref_acc
@@ -247,7 +291,7 @@ class PointParticleRandomWalkPosition(PointParticleBase):
         _, vel_key = jrandom.split(state.rnd_key)
         ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), 5e-2 * jnp.eye(3,))
 
-        ref_pos = state.ref_pos + ref_vel * self.dt
+        ref_pos = state.ref_pos + state.ref_vel * self.dt
 
         # update time
         time = state.time + self.dt
@@ -261,7 +305,7 @@ class PointParticleRandomWalkPosition(PointParticleBase):
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action, ref_acc), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
 
     def _get_obs(self, env_state):
         '''
@@ -269,12 +313,21 @@ class PointParticleRandomWalkPosition(PointParticleBase):
         '''
         state = env_state
 
-        if not self.equivariant:
-            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
+        if self.equivariant == 0:
+            non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel])
             return non_eq_state
-        else:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+        elif self.equivariant == 1:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel])
             return eq_state
+        elif self.equivariant == 2:
+            eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel])
+            return eq_state
+        elif self.equivariant == 3 or self.equivariant == 4:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
+            return eq_state
+        else:
+            print("Invalid Equivariance Type!")
+            raise NotImplementedError
 
     def _reset(self, key):
         '''
@@ -314,7 +367,12 @@ class PointParticleRandomWalkPosition(PointParticleBase):
         return PointRandomWalkState
     
     def observation_space(self) -> spaces.Box:
-        n_obs = 9 if self.equivariant else 15
+        
+        if self.equivariant == 0: n_obs = 12
+        elif self.equivariant == 1 or self.equivariant == 2: n_obs = 9
+        elif self.equivariant == 3 or self.equivariant == 4: n_obs = 6
+        else: raise NotImplementedError
+
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
@@ -338,21 +396,25 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
         returns: tuple: (env_state, observation, reward, done, info)
         '''
         # clip action
-        action = jnp.clip(action, -1., 1.)
+        if self.equivariant == 4 or self.equivariant == 5: action = action + env_state.ref_acc
+        if self.clip_actions: action = jnp.clip(action, -1., 1.)
 
         state = env_state
         # update particle position
         vel = state.vel + action * self.dt
-        pos = state.pos + vel * self.dt
+        pos = state.pos + state.vel * self.dt
 
         # update reference position
         #ref_acc = env_state.ref_acc
 
         _, acc_key = jrandom.split(state.rnd_key)
-        ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), 0.5 * jnp.eye(3,))
+        #ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), 0.5 * jnp.eye(3,))
 
-        ref_vel = state.ref_vel + ref_acc * self.dt
-        ref_pos = state.ref_pos + ref_vel * self.dt
+        # Truncate reference acceleration to [-1, 1]
+        ref_acc = jrandom.truncated_normal(acc_key, lower=-jnp.ones(3,), upper=jnp.ones(3,))
+
+        ref_vel = state.ref_vel + state.ref_acc * self.dt
+        ref_pos = state.ref_pos + state.ref_vel * self.dt
 
         # update time
         time = state.time + self.dt
@@ -366,21 +428,29 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action, ref_acc), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
 
     def _get_obs(self, env_state):
         '''
         Get observation from the environment state. Remove time from the observation as it is not needed by the agent.
         '''
         state = env_state
-
-        if not self.equivariant:
+        
+        if self.equivariant == 0:
             non_eq_state = jnp.hstack([state.pos, state.vel, state.ref_pos, state.ref_vel, state.ref_acc])
             return non_eq_state
-        else:
-            # eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+        elif self.equivariant == 1:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, state.ref_acc])
             return eq_state
+        elif self.equivariant == 2:
+            eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+        elif self.equivariant == 3:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel,])
+            return eq_state
+        else:
+            print("Invalid Equivariance Type!")
+            raise NotImplementedError
 
     def _reset(self, key):
         '''
@@ -398,7 +468,8 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
         #                    lambda _: predefined_ref_pos, None)
         key, vel_key, acc_key = jrandom.split(key, 3)
         ref_vel = jrandom.multivariate_normal(vel_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
-        ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        #ref_acc = jrandom.multivariate_normal(acc_key, jnp.zeros(3,), jnp.eye(3,) * 0.5)
+        ref_acc = jrandom.truncated_normal(acc_key, lower=-jnp.ones(3,), upper=jnp.ones(3,))
         time = 0.0
         new_key = jrandom.split(key)[0]
 
@@ -420,8 +491,14 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
         return PointRandomWalkState
     
     def observation_space(self) -> spaces.Box:
-        # n_obs = 9 if self.equivariant else 15
-        n_obs = 12 if self.equivariant else 15
+        
+        if self.equivariant == 0: n_obs = 15
+        elif self.equivariant == 1 or self.equivariant == 2: n_obs = 12
+        elif self.equivariant == 3 or self.equivariant == 5: n_obs = 9
+        elif self.equivariant == 4: n_obs = 6
+        else: raise NotImplementedError
+        
+        #n_obs = 12 if self.equivariant else 15
         low = jnp.array(n_obs*[-jnp.finfo(jnp.float32).max])
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
@@ -479,7 +556,7 @@ class PointParticleRandomWalkAccel(PointParticleBase):
         env_state = lax.cond(done, self._reset, lambda _: env_state, key)
 
         # added stop gradient to match gymnax environments 
-        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state,action), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
+        return lax.stop_gradient(env_state), lax.stop_gradient(self._get_obs(env_state)), self._get_reward(env_state, action, ref_acc), jnp.array(done), {"Finished": lax.select(done, 0.0, 1.0)}
 
     def _get_obs(self, env_state):
         '''
@@ -537,11 +614,8 @@ class PointParticleRandomWalkAccel(PointParticleBase):
         high = jnp.array(n_obs*[jnp.finfo(jnp.float32).max])
 
         return spaces.Box(low, high, (n_obs,), jnp.float32)
-    
-@jit
-def lissajous_1D(t, amp, freq, phase):
-    return amp * jnp.sin(freq * t + phase)
 
+@jit
 def lissajous_3D(t, amplitudes, frequencies, phases):
     x = amplitudes[0] * jnp.sin(2.0*jnp.pi * frequencies[0] * t + phases[0])
     y = amplitudes[1] * jnp.sin(2.0*jnp.pi * frequencies[1] * t + phases[1])
@@ -647,13 +721,7 @@ class PointParticleLissajousTracking(PointParticleBase):
             eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
             return eq_state
         elif self.equivariant == 3:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
-            return eq_state
-        elif self.equivariant == 4:
             eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel,])
-            return eq_state
-        elif self.equivariant == 5:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel,])
             return eq_state
         else:
             print("Invalid Equivariance Type!")

@@ -12,9 +12,9 @@ from flax.core import freeze
 
 import os
 
-from models import ActorCritic
+from rl.models import ActorCritic
 from envs.base_envs import EnvState, PointState
-from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
+import envs.registry as registry
 import argparse
 import ast
 
@@ -104,23 +104,7 @@ if __name__ == "__main__":
 
 
     # Create environment
-    if args.env_name == "position":
-        env = PointParticlePosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"], 
-                                    termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_position":
-        env = PointParticleRandomWalkPosition(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_velocity":
-        env = PointParticleRandomWalkVelocity(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    elif args.env_name == "random_walk_accel":
-        env = PointParticleRandomWalkAccel(equivariant=train_config["EQUIVARIANT"], terminate_on_error=train_config["TERMINATE_ON_ERROR"], reward_q=train_config["REWARD_Q"], reward_r=train_config["REWARD_R"], reward_reach=train_config["REWARD_REACH"],
-                                           termination_bound=train_config["TERMINATION_BOUND"], terminal_reward=train_config["TERMINAL_REWARD"], state_cov_scalar=train_config["STATE_COV_SCALAR"], ref_cov_scalar=train_config["REF_COV_SCALAR"])
-    else:
-        raise ValueError("Invalid environment name")
+    env = registry.get_env_by_name(args.env_name, num_envs=args.num_envs, seed=args.seed, equivariant=args.equivariant)
     
     env_rng = jax.random.split(rng, args.num_envs)
     env_states, obs = jax.vmap(env.reset)(env_rng)

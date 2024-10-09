@@ -15,7 +15,7 @@ import numpy as np
 import os
 
 # from base_envs import PointState, PointVelocityState, EnvState
-from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
+import envs.registry as registry
 from rl.models import ActorCritic
 from envs.wrappers import LogWrapper
 
@@ -41,23 +41,10 @@ def make_train(config):
 
     # Create environment
     print("Terminate on error? : ", config["TERMINATE_ON_ERROR"])
-    if config["env_name"] == "position":
-        env = PointParticlePosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"], 
-                                    termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
-    elif config["env_name"] == "constant_velocity":
-        env = PointParticleConstantVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
-                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
-    elif config["env_name"] == "random_walk_position":
-        env = PointParticleRandomWalkPosition(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
-                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
-    elif config["env_name"] == "random_walk_velocity":
-        env = PointParticleRandomWalkVelocity(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
-                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
-    elif config["env_name"] == "random_walk_accel":
-        env = PointParticleRandomWalkAccel(equivariant=config["EQUIVARIANT"], terminate_on_error=config["TERMINATE_ON_ERROR"], reward_q=config["REWARD_Q"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"],
-                                           termination_bound=config["TERMINATION_BOUND"], terminal_reward=config["TERMINAL_REWARD"], state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"])
-    else:
-        raise ValueError("Invalid environment name")
+    env = registry.get_env_by_name(config["env_name"], terminate_on_error=config["TERMINATE_ON_ERROR"], termination_bound=config["TERMINATION_BOUND"], 
+                                   reward_q_pos=config["REWARD_Q_POS"], reward_q_vel=config["REWARD_Q_VEL"], reward_r=config["REWARD_R"], reward_reach=config["REWARD_REACH"], terminal_reward=config["TERMINAL_REWARD"], 
+                                   state_cov_scalar=config["STATE_COV_SCALAR"], ref_cov_scalar=config["REF_COV_SCALAR"], use_des_action_in_reward=config["USE_DES_ACTION_IN_REWARD"], clip_actions=config["CLIP_ACTIONS"], 
+                                   reward_fn_type=config["REWARD_FN_TYPE"], use_abs_reward_fn=config["USE_ABS_REWARD_FN"])
     env = LogWrapper(env)
     
     # make checkpointer
@@ -238,21 +225,26 @@ def parse_args(config):
     parser = argparse.ArgumentParser(description="Train PPO on PointParticlePosition")
     
     # Env specific arguments
-    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity), random_walk_position (PointParticleRandomWalkPosition), random_walk_velocity (PointParticleRandomWalkVelocity), random_walk_accel (PointParticleRandomWalkAccel)")
+    parser.add_argument("--env-name", type=str, required=True, help="Name of the environment: position (PointParticlePosition), constant_velocity (PointParticleConstantVelocity), random_walk_position (PointParticleRandomWalkPosition), random_walk_velocity (PointParticleRandomWalkVelocity), random_walk_accel (PointParticleRandomWalkAccel), random_lissajous")
     parser.add_argument("--seed", type=int, default=0, help="Seed to use for the evaluation")
     parser.add_argument("--debug", default=False, dest="DEBUG", action="store_true", help="Print debug information")
     parser.add_argument('--no-debug', dest='DEBUG', action='store_false', help="Do not print debug information")
-    parser.add_argument("--equivariant", default=False, action='store_true', dest="EQUIVARIANT", help="Whether to use the equivariant version of the environment")
+    parser.add_argument("--equivariant", type=int, default=0, dest="EQUIVARIANT", help="Type of Equivariance:\n0 - No equivariance\n1 - Position Equivariance (P-error only)\n2 - Velocity Equivariance (V-error only)\n3 - Position and Velcoity Equivariance (PV - error)\n4 - Position, Velocity, Accel equivariance (PVA - error)")
     parser.add_argument("--exp-name", type=str, dest="EXP_NAME", required=True, help="Name of the experiment")
-    parser.add_argument("--num-seeds", type=int, default=5, help="Number of seeds to train on")
+    parser.add_argument("--num-seeds", type=int, default=10, help="Number of seeds to train on")
     parser.add_argument("--terminate-on-error", default=True, dest="TERMINATE_ON_ERROR", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Whether to terminate the episode on error")
     parser.add_argument("--termination-bound", type=float, dest="TERMINATION_BOUND" ,default=10.0, help="Bound for termination")
-    parser.add_argument("--reward_q", type=float, default=1e-2,dest="REWARD_Q", help="Q value for reward. Positive. ")
+    parser.add_argument("--reward_q_pos", type=float, default=1e-2,dest="REWARD_Q_POS", help="Q value (position) for reward. Positive. ")
+    parser.add_argument("--reward_q_vel", type=float, default=1e-2,dest="REWARD_Q_VEL", help="Q value (velocity) for reward. Positive. ")
     parser.add_argument("--reward_r", type=float, default=1e-4, dest="REWARD_R", help="R value for reward. Positive. ")
-    parser.add_argument("--reward_reach", type=float, default=0.1, dest="REWARD_REACH", help="Reward for reaching the hover point")
+    parser.add_argument("--reward_reach", default=False, action="store_true", dest="REWARD_REACH", help="Use Reward for reaching the hover point")
     parser.add_argument("--terminal-reward", type=float, default=0.0, dest="TERMINAL_REWARD", help="Reward for terminal state, only when error is exceeded")
     parser.add_argument("--state_cov_scalar", type=float, default=0.5, dest="STATE_COV_SCALAR", help="State covariance scalar for initial conditions")
     parser.add_argument("--ref_cov_scalar", type=float, default=3.0, dest="REF_COV_SCALAR", help="Reference covariance scalar for initial conditions")
+    parser.add_argument("--no_des_action_in_reward", default=True, action="store_false", dest="USE_DES_ACTION_IN_REWARD", help="specify flag if you DONT WANT to use desired action in the reward")
+    parser.add_argument("--dont-clip-actions", default=True, action="store_false", dest="CLIP_ACTIONS", help="specify flag if you DONT WANT to the env to clip the actions." )
+    parser.add_argument("--use-abs-reward-fn", default=False, action="store_true", dest="USE_ABS_REWARD_FN", help="Use absolute errors instead of quadratic errors in the reward function.")
+    parser.add_argument("--reward_fn_type", type=int, default=0, dest="REWARD_FN_TYPE", help="Type of reward function: \n0 - L1 norm (default) \n1 - L2 norm \n2 - L2 squared norm")
 
     # Model specific arguments
     parser.add_argument("--num-layers", type=int, dest="NUM_LAYERS", default=3, help="Number of layers in the network")
@@ -291,10 +283,10 @@ if __name__ == "__main__":
         "LR": 3e-4,
         "NUM_ENVS": 16,
         "NUM_STEPS": 512,
-        "TOTAL_TIMESTEPS": 10e6,# 10e6
+        "TOTAL_TIMESTEPS": 100e6,# 10e6
         "UPDATE_EPOCHS": 5,
         "NUM_MINIBATCHES": 4,
-        "GAMMA": 0.99,
+        "GAMMA": 0.995,
         "LAMBDA": 0.95,
         "CLIP_RANGE": 0.2,
         "ENT_COEF": 0.0,
@@ -302,12 +294,18 @@ if __name__ == "__main__":
         "MAX_GRAD_NORM": 0.5,
         "ACTIVATION": "leaky_relu",
         "OUT_ACTIVATION": "hard_tanh",
+        #"OUT_ACTIVATION": None,
         "ANNEAL_LR": True,
         "DEBUG": False,
-        "REWARD_Q": 1e-2,
+        "REWARD_Q_POS": 1e-2,
+        "REWARD_Q_VEL": 1e-2,
         "REWARD_R": 1e-4,
-        "REWARD_REACH": 0.1,
-        "TERMINAL_REWARD": -25.,
+        "REWARD_REACH": False,
+        #"TERMINAL_REWARD": -25.,
+        "TERMINAL_REWARD": 0.,
+        "USE_DES_ACTION_IN_REWARD": True,
+        "CLIP_ACTIONS": True,
+        "REWARD_FN_TYPE": 1,
     }
 
     config = parse_args(config)
