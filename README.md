@@ -33,4 +33,3 @@ pip install -e .
 
 <img src="./figures/example_rollouts.png" alt="main_rollouts" width="800"/>
 
-
