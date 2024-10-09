@@ -33,3 +33,5 @@ pip install -e .
 
 <img src="./figures/example_rollouts.png" alt="main_rollouts" width="800"/>
 
+## Checkpoints
+Pretrained models are provided within the `checkpoints` directory, for all systems. These models match the performance reported in the paper, and the individual hyperparameters used for each experiment are contained wihtin the `config.txt` file of the individual experiments. 
