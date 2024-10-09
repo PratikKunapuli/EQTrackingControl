@@ -243,9 +243,9 @@ def main():
     # eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_pos.npy")
     # eq_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_rotm.npy")
 
-    ref_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/eq/ref_pos_data.npy")
-    baseline_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/non_eq/pos_data.npy")
-    eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/eq/pos_data.npy")
+    ref_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/anim_ref.npy")
+    baseline_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/anim_baseline.npy")
+    eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/anim_eq.npy")
 
     rclpy.init(args=None)
 

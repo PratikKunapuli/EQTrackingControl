@@ -12,7 +12,7 @@ from flax.core import freeze
 
 import os
 
-from models import ActorCritic
+from rl.models import ActorCritic
 from envs.base_envs import EnvState, PointState
 from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
 import argparse

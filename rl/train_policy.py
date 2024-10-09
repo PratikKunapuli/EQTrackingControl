@@ -16,8 +16,8 @@ import os
 
 # from base_envs import PointState, PointVelocityState, EnvState
 from envs.particle_envs import PointParticlePosition, PointParticleConstantVelocity, PointParticleRandomWalkPosition, PointParticleRandomWalkVelocity, PointParticleRandomWalkAccel
-from models import ActorCritic
-from wrappers import LogWrapper
+from rl.models import ActorCritic
+from envs.wrappers import LogWrapper
 
 
 

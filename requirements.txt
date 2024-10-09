@@ -1,0 +1,13 @@
+chex==0.1.86
+distrax==0.1.5
+flax==0.8.4
+gymnasium==0.29.1
+gymnax==0.0.8
+jax==0.4.30
+matplotlib==3.9.2
+numpy==2.1.2
+optax==0.2.3
+orbax==0.1.9
+scipy==1.14.1
+seaborn==0.13.2
+setuptools==70.1.1
