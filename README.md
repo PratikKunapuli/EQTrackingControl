@@ -35,3 +35,17 @@ pip install -e .
 
 ## Checkpoints
 Pretrained models are provided within the `checkpoints` directory, for all systems. These models match the performance reported in the paper, and the individual hyperparameters used for each experiment are contained wihtin the `config.txt` file of the individual experiments. 
+
+## Citation
+If you use this repository or paper please cite the following:
+```
+@misc{welde2024leveragingsymmetryacceleratelearning,
+  title={Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems}, 
+  author={Jake Welde and Nishanth Rao and Pratik Kunapuli and Dinesh Jayaraman and Vijay Kumar},
+  year={2024},
+  eprint={2409.11238},
+  archivePrefix={arXiv},
+  primaryClass={cs.RO},
+  url={https://arxiv.org/abs/2409.11238}
+}
+```
