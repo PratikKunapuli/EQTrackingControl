@@ -208,7 +208,26 @@
               </p>
               </div>
           </div>
-          <!--/ Methods / Theory -->
+          </div>
+          <div class="columns is-centered">
+            <div class="column">
+              <figure class="image">
+                <img src="./static/images/method_displacement.png" alt="Symmetry" style="height:90%">
+              </figure>
+              <p>
+              Given some system with a symmetry group <code>G</code>, we can relate different state and referneces to be equivalent under the action of <code>G</code>. This allows us to reduce the size of the MDP and learn a policy that is equivariant to the symmetry group.
+              </p>
+            </div>
+          </div>
+          <div class="columns is-centered">
+            <div class="column">
+              <figure class="image">
+                <img src="./static/images/main_methods.png" alt="Methods" style="height:90%">
+              </figure>
+              <p>
+                
+              </p>
+            </div>
           </div>
       </div>
     </section>
@@ -220,6 +239,29 @@
             <h2 class="title is-3">Results</h2>
             <div class="columns is-centered">
             <div class="column content">
+
+              <div class="column is-full">
+                <h2 class="title is-3">Evaluation Videos</h2>
+                <p>
+                  Select a robot to view the evaluation video.
+                </p>
+                <br>
+                <div class="select">
+                  <select id="robotName" class="custom-dropdown" onchange="updateResultsVideo()">
+                    <option value="Particle">Particle</option>
+                    <option value="Astrobee">Astrobee</option>
+                    <option value="Quadrotor">Quadrotor</option>
+                  </select>
+                </div>
+                <br>
+                <br>
+                <!-- Image that changes based on selection -->
+                <figure>
+                  <video id="resultsVideo" src="static/videos/particle.webm" alt="Particle" autoplay muted loop>
+                </figure>
+                <!--/ Image that changes based on selection -->
+              </div>
+
               <p style="font-size:125%;">
               Training and evaluation curves for the <code>Particle</code> system.
               <div class="columns is-centered">
@@ -260,6 +302,24 @@
 
         </div>
     </section>
+
+    <script>
+      function updateResultsVideo() {
+        var setting = document.getElementById("robotName").value;
+        var video = document.getElementById("resultsVideo");
+        
+        if (setting === "Particle") {
+          video.src = "static/videos/particle.webm";
+          video.alt = "Particle";
+        } else if (setting === "Astrobee") {
+          video.src = "static/videos/astrobee.webm";
+          video.alt = "Astrobee";
+        } else if (setting === "Quadrotor") {
+          video.src = "static/videos/quad.webm";
+          video.alt = "Quadrotor";
+        }
+      }
+    </script>
     
     
     <section class="section" id="BibTeX">
