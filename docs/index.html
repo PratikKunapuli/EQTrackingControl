@@ -48,6 +48,20 @@
     <script src="./static/js/bulma-slider.min.js"></script>
     <script src="./static/js/index.js"></script>
 
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        },
+        svg: {
+          fontCache: 'global'
+        }
+      };
+      </script>
+      <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+      </script>
+
 </head>
 <body>
     <nav class="navbar" role="navigation" aria-label="main navigation">
@@ -87,7 +101,7 @@
           <div class="container is-max-desktop">
             <div class="columns is-centered">
               <div class="column has-text-centered">
-                <h1 class="title is-1 publication-title">Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems</h1>
+                <h1 class="title is-2 publication-title">Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems</h1>
                 <div class="is-size-5 publication-authors">
                   <span class="author-block">
                     <a href="https://jakewelde.com/">Jake Welde</a><sup>*</sup>,</span>
@@ -196,36 +210,28 @@
       
     <section class="section">
       <div class="container is-max-desktop">
-      
           <div class="columns is-centered">
-      
-          <!-- Methods / Theory -->
-          <div class="column">
-              <div class="content">
-              <h2 class="title is-3">Methods</h2>
-              <p>
-                  Explaination coming soon!
-              </p>
-              </div>
+            <h2 class="title is-3">Methods</h2>
           </div>
+          <div class="column is-centered">
+            <figure class="image">
+              <img src="./static/images/methods_displacement.png" alt="Symmetry">
+            </figure>
+            <div class="content has-text-justified">
+            <p style="font-size:125%;">
+            Given some system with a symmetry group $\Phi_g$, we can relate different state and referneces to be equivalent under the group action of $g$. This allows us to consider equivariant states and references, which can improve sample efficiency of RL algorithms.
+            </p>
           </div>
-          <div class="columns is-centered">
-            <div class="column">
-              <figure class="image">
-                <img src="./static/images/method_displacement.png" alt="Symmetry" style="height:90%">
-              </figure>
-              <p>
-              Given some system with a symmetry group <code>G</code>, we can relate different state and referneces to be equivalent under the action of <code>G</code>. This allows us to reduce the size of the MDP and learn a policy that is equivariant to the symmetry group.
-              </p>
-            </div>
-          </div>
+
           <div class="columns is-centered">
             <div class="column">
               <figure class="image">
-                <img src="./static/images/main_methods.png" alt="Methods" style="height:90%">
+                <img src="./static/images/methods_main.png" alt="Methods">
               </figure>
-              <p>
-                
+              <div class="content has-text-justified">
+              <p style="font-size:125%;">
+              Instead of training RL in the full state space $\mathcal{S}$, we can train in the quotient space $\mathcal{S} / \mathcal{G}$, which is a lower-dimensional space that captures the essential dynamics of the system. This allows us to train faster and more efficiently.
+              Note that since the reward function is also equivariant, the policy learned in the quotient space can be lifted to the full state space, and furthermore the optimal policy in the quotient space is also optimal in the full state space.
               </p>
             </div>
           </div>
@@ -241,8 +247,8 @@
             <div class="column content">
 
               <div class="column is-full">
-                <h2 class="title is-3">Evaluation Videos</h2>
-                <p>
+                <h2 class="title is-4">Rollouts</h2>
+                <p style="font-size: 125%;">
                   Select a robot to view the evaluation video.
                 </p>
                 <br>
@@ -261,7 +267,7 @@
                 </figure>
                 <!--/ Image that changes based on selection -->
               </div>
-
+              <br>
               <p style="font-size:125%;">
               Training and evaluation curves for the <code>Particle</code> system.
               <div class="columns is-centered">
