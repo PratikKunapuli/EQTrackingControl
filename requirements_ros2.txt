@@ -1,7 +1,3 @@
-ament_copyright==0.12.11
-ament_flake8==0.12.11
-ament_index_python==1.4.0
-ament_pep257==0.12.11
 chex==0.1.86
 distrax==0.1.5
 flax==0.8.4
