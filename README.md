@@ -27,6 +27,39 @@ Finally, install the package locally for the relative imports to work
 ```
 pip install -e .
 ```
+## Running the code
+Example to train and evaluate from scratch:
+```
+## Training
+------------
+# Particle Env
+python3 train_policy.py.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_p_equivariant/model_final --equivariant 1
+python3 train_policy.py.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk/model_final --equivariant 0
+python3 train_policy.py.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_pv_equivariant/model_final --equivariant 3
+python3 train_policy.py.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_pva_equivariant/model_final --equivariant 4
+# Astrobee Env
+python3 train_policy.py.py --env-name astrobee_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_astrobee_random_walk/model_final --equivariant 0 --symmetry_type 2
+python3 train_policy.py.py --env-name astrobee_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_astrobee_random_walk_equivariant/model_final --equivariant 1 --symmetry_type 2
+# Quadrotor Env
+python3 train_policy.py.py --env-name quadrotor_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_quadrotor_random_walk/model_final --equivariant 0
+python3 train_policy.py.py --env-name quadrotor_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_quadrotor_random_walk_equivariant/model_final --equivariant 1
+------------
+## Evaluation
+------------
+python3 eval_policy.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_p_equivariant/model_final --equivariant 1
+python3 eval_policy.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk/model_final --equivariant 0
+python3 eval_policy.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_pv_equivariant/model_final --equivariant 3
+python3 eval_policy.py --env-name particle_random_walk_velocity --seed 0 --load-path ./checkpoints/RUN_EXPS_particle_random_walk_pva_equivariant/model_final --equivariant 4
+python3 eval_policy.py --env-name astrobee_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_astrobee_random_walk/model_final --equivariant 0 --symmetry_type 2
+python3 eval_policy.py --env-name astrobee_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_astrobee_random_walk_equivariant/model_final --equivariant 1 --symmetry_type 2
+python3 eval_policy.py --env-name quadrotor_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_quadrotor_random_walk/model_final --equivariant 0
+python3 eval_policy.py --env-name quadrotor_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_quadrotor_random_walk_equivariant/model_final --equivariant 1
+```
+A sample script is provided to run on a SLURM cluster:
+```
+cd rl/
+sbatch slurm_run_exps.sh
+```
 
 ## Example Results
 <img src="./figures/example_results.png" alt="main_results" width="800"/>
