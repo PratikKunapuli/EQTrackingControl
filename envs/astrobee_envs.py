@@ -11,7 +11,6 @@ from gymnax.environments import spaces
 
 from envs.base_envs import SE3FAQuadState, SE3FAQuadRandomWalkState, SE3QuadFullyActuatedBase, SE3FAQuadLissajousTrackingState
 
-
 class SE3QuadFullyActuatedPosition(SE3QuadFullyActuatedBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -22,7 +21,7 @@ class SE3QuadFullyActuatedPosition(SE3QuadFullyActuatedBase):
         self.kd = 1.0
 
         # Choose inertia matrix
-        self.J = jnp.diag(jnp.array([0.5, 0.5, 1]))
+        self.J = jnp.diag(jnp.array([0.1, 0.1, 0.2]))
 
         # 1x4 matrix
         self.alloc_matrix_ft = jnp.array(
@@ -176,7 +175,7 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
 
         # Choose inertia matrix
         # self.J = jnp.diag(jnp.array([0.5, 0.5, 1.0]))
-        self.J = jnp.diag(jnp.array([0.25, 0.25, 0.5]))
+        self.J = jnp.diag(jnp.array([0.1, 0.1, 0.2]))
 
         # 1x4 matrix
         self.alloc_matrix_ft = jnp.array(
@@ -234,7 +233,10 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
         #vel_dot = state.rotm @ (F / self.m)
         
         # Here, in R3 x SO(3), F is in world frame, \tau is in body frame
-        vel_dot = F / self.m
+        if self.symmetry_type == 0 or self.symmetry_type == 1:
+            vel_dot = F / self.m
+        elif self.symmetry_type == 2 or self.symmetry_type == 3:
+            vel_dot = state.rotm @ (F / self.m)
 
         omega = state.omega + omega_dot * self.dt
         rotm = state.rotm @ jsp.linalg.expm(omega_hat * self.dt)
@@ -255,7 +257,11 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
         des_action = jnp.concat((rand_F, rand_tau))
         
         #random_vel_dot = state.rotm @ rand_F
-        random_vel_dot = rand_F / self.m
+        if self.symmetry_type == 0 or self.symmetry_type == 1:
+            random_vel_dot = rand_F / self.m
+        elif self.symmetry_type == 2 or self.symmetry_type == 3:
+            random_vel_dot = state.ref_rotm @ (rand_F / self.m)
+        #random_vel_dot = rand_F / self.m
         ref_vel = state.ref_vel + random_vel_dot * self.dt
         ref_pos = state.ref_pos + state.ref_vel * self.dt
         
@@ -291,27 +297,12 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
             return non_eq_state
         #p,p
         elif self.equivariant == 1:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
-            return eq_state
-        #pv_p
-        elif self.equivariant == 2:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
-            return eq_state
-        #pva_p
-        elif self.equivariant == 3:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.ref_tau])
-            return eq_state
-        #pva_pa
-        elif self.equivariant == 4:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau - state.ref_tau])
-            return eq_state
-        #pa_p
-        elif self.equivariant == 5:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau, state.ref_tau])
-            return eq_state
-        #pa_pa
-        elif self.equivariant == 6:
-            eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau - state.ref_tau])
+            if self.symmetry_type == 0 or self.symmetry_type == 1:
+                eq_state = jnp.hstack([state.ref_pos - state.pos, state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
+            elif self.symmetry_type == 2 or self.symmetry_type == 3:
+                eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
+            else:
+                raise NotImplementedError("Invalid Symmetry Type!")            
             return eq_state
         else:
             raise NotImplementedError("Invalid Equivariance Type!")
@@ -327,7 +318,7 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
         ref_pos = lax.cond(self.predefined_ref_pos is None, self._sample_random_ref_pos, self._get_predefined_ref_pos, ref_key)
 
         omega = jrandom.multivariate_normal(omega_key, jnp.zeros(3), 1e-5 * self.state_cov)
-        rotm, _ = jnp.linalg.qr(1e-2 * jrandom.normal(rotm_key, (3,3)))
+        rotm, _ = jnp.linalg.qr(1e-1 * jrandom.normal(rotm_key, (3,3)))
 
         # ref_pos = lax.cond(self.predefined_ref_pos is None, 
         #                    lambda _: jrandom.multivariate_normal(key, self.ref_mean, self.ref_cov), 
@@ -353,7 +344,7 @@ class SE3QuadFullyActuatedRandomWalk(SE3QuadFullyActuatedBase):
     
     @property
     def name(self)-> str:
-        return "SE3QuadFullyActuatedPosition"
+        return "SE3QuadFullyActuatedRandomWalk"
 
     @property
     def EnvState(self):
@@ -406,7 +397,7 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
 
         # Choose inertia matrix
         # self.J = jnp.diag(jnp.array([0.5, 0.5, 1.0]))
-        self.J = jnp.diag(jnp.array([0.25, 0.25, 0.5]))
+        self.J = jnp.diag(jnp.array([0.1, 0.1, 0.2]))
 
         # 1x4 matrix
         self.alloc_matrix_ft = jnp.array(
@@ -477,7 +468,11 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         #vel_dot = state.rotm @ F
         
         # Here, in R3 x SO(3), F is in world frame, \tau is in body frame
-        vel_dot = F / self.m
+        #vel_dot = F / self.m
+        if self.symmetry_type == 0 or self.symmetry_type == 1:
+            vel_dot = F / self.m
+        elif self.symmetry_type == 2 or self.symmetry_type == 3:
+            vel_dot = state.rotm @ (F / self.m)
 
         omega = state.omega + omega_dot * self.dt
         rotm = state.rotm @ jsp.linalg.expm(omega_hat * self.dt)
@@ -507,8 +502,8 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         #ref_pos = state.ref_pos + state.ref_vel * self.dt
         
         #ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 1e-2, state.frequencies * 0.1, state.phases).squeeze()
-        ref_omega_dot = self.ref_omega_dot_fn(jnp.array([time]), state.amplitudes * 2e-1, state.frequencies * 0.25, state.phases).squeeze()
-        ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 2e-1, state.frequencies * 0.25, state.phases).squeeze()
+        ref_omega_dot = self.ref_omega_dot_fn(jnp.array([time]), state.amplitudes * 5e-1, state.frequencies, state.phases).squeeze()
+        ref_omega = self.ref_omega_fn(jnp.array([time]), state.amplitudes * 5e-1, state.frequencies, state.phases).squeeze()
         #ref_omega = state.ref_omega + ref_omega_dot * self.dt
         ref_omega_hat = self._hat_map(ref_omega)
         ref_rotm = state.ref_rotm @ jsp.linalg.expm(ref_omega_hat * self.dt)
@@ -541,27 +536,12 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
             return non_eq_state
         #p,p
         elif self.equivariant == 1:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
-            return eq_state
-        #pv_p
-        elif self.equivariant == 2:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
-            return eq_state
-        #pva_p
-        elif self.equivariant == 3:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.ref_tau])
-            return eq_state
-        #pva_pa
-        elif self.equivariant == 4:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau - state.ref_tau])
-            return eq_state
-        #pa_p
-        elif self.equivariant == 5:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau, state.ref_tau])
-            return eq_state
-        #pa_pa
-        elif self.equivariant == 6:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.F - state.ref_F, state.tau - state.ref_tau])
+            if self.symmetry_type == 0 or self.symmetry_type == 1:
+                eq_state = jnp.hstack([state.ref_pos - state.pos, state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
+            elif self.symmetry_type == 2 or self.symmetry_type == 3:
+                eq_state = jnp.hstack([state.rotm.T @ (state.ref_pos - state.pos), state.vel, state.ref_vel, jnp.ravel(state.rotm.T @ state.ref_rotm), state.omega, state.ref_omega, state.ref_F, state.ref_tau])
+            else:
+                raise NotImplementedError("Invalid Symmetry Type!")            
             return eq_state
         else:
             raise NotImplementedError("Invalid Equivariance Type!")
@@ -573,7 +553,7 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         key, pos_key, vel_key, omega_key, rotm_key, amp_key, freq_key, phase_key = jrandom.split(key, 8)
         
         amplitudes = jrandom.uniform(amp_key, (3,), minval=-5., maxval=5.)
-        frequencies = jrandom.uniform(freq_key, (3,), minval=0.01, maxval=0.05)
+        frequencies = jrandom.uniform(freq_key, (3,), minval=0.05, maxval=0.1)
         phases = jrandom.uniform(phase_key, (3,), minval=0., maxval=2.0 * jnp.pi)
         
         time = 0.0
@@ -581,7 +561,7 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         #omega = jnp.zeros(3,)
         #rotm = jnp.eye(3)
 
-        omega = jrandom.multivariate_normal(omega_key, 1e-5 * jnp.zeros(3), self.state_cov)
+        omega = jrandom.multivariate_normal(omega_key, jnp.zeros(3), 1e-5 * self.state_cov)
         rotm, _ = jnp.linalg.qr(1e-2 * jrandom.normal(rotm_key, (3,3)))
 
         # ref_pos = lax.cond(self.predefined_ref_pos is None, 
@@ -597,8 +577,8 @@ class SE3QuadFullyActuatedLissajous(SE3QuadFullyActuatedBase):
         ref_vel = self.ref_vel_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
         ref_acc = self.ref_acc_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
 
-        pos = jrandom.multivariate_normal(pos_key, ref_pos, 1e-1 * self.state_cov)
-        vel = jrandom.multivariate_normal(vel_key, ref_vel, 1e-1 * self.state_cov)
+        pos = jrandom.multivariate_normal(pos_key, ref_pos, 5 * self.state_cov)
+        vel = jrandom.multivariate_normal(vel_key, ref_vel, 5 * self.state_cov)
 
         ref_omega = self.ref_omega_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
         ref_omega_dot = self.ref_omega_dot_fn(jnp.array([time]), amplitudes, frequencies, phases).squeeze()
@@ -697,5 +677,3 @@ if __name__ == "__main__":
     # print(obs_buffer.shape) # (100, 4, 3) - 100 steps, 4 observations (pos, vel, ref_pos, ref_vel), 3 dimensions
     # print(obs_buffer[0]) # Initial observation
     # print(obs_buffer[-1]) # Final observation
-
-    

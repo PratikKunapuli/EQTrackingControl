@@ -30,6 +30,10 @@ class ActorCritic(nn.Module):
 
         if self.out_activation == "hard_tanh":
             out_activation = nn.hard_tanh
+        elif self.out_activation == "relu":
+            out_activation = nn.relu
+        elif self.out_activation == "clipped_relu":
+            out_activation = nn.clipped_relu
         else:
             raise ValueError("Invalid output activation function.")
     

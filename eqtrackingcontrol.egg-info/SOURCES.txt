@@ -5,6 +5,7 @@ envs/astrobee_envs.py
 envs/base_envs.py
 envs/particle_envs.py
 envs/quadrotor_envs.py
+envs/registry.py
 envs/wrappers.py
 eqtrackingcontrol.egg-info/PKG-INFO
 eqtrackingcontrol.egg-info/SOURCES.txt
