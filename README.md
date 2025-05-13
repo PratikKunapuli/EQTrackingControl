@@ -11,7 +11,7 @@ This repository contains code for the environment and RL training implementation
 ## Installation
 This package was run on Python 3.10. Other python versions may work, but it has not been tested. Jax can be installed with backend support for GPU/TPU by following their installation instructions. 
 
-```
+```bash
 git clone git@github.com:PratikKunapuli/PointParticleEQ.git
 cd PointParticleEQ
 pip install -r requirements.txt
@@ -19,12 +19,12 @@ pip install -r requirements.txt
 
 If you would like to use the ROS2 visualizations, ROS2 must be installed seperately. Then, the following line can be used to install the required ROS packages.
 
-```
+```bash
 pip install -r requirements_ros2.txt
 ```
 
 Finally, install the package locally for the relative imports to work
-```
+```bash
 pip install -e .
 ```
 ## Running the code
@@ -59,7 +59,7 @@ python3 eval_policy.py --env-name quadrotor_random_walk --seed 0 --load-path ./c
 python3 eval_policy.py --env-name quadrotor_random_walk --seed 0 --load-path ./checkpoints/RUN_EXPS_quadrotor_random_walk_equivariant/model_final --equivariant 1
 ```
 A sample script is provided to run on a SLURM cluster:
-```
+```bash
 cd rl/
 sbatch slurm_run_exps.sh
 ```
