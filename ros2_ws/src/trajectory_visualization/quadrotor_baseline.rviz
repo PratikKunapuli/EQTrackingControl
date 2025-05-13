@@ -90,7 +90,7 @@ Visualization Manager:
         - Alpha: 0.20000000298023224
           Class: rviz_default_plugins/RobotModel
           Collision Enabled: false
-          Description File: /home/pratikk/point_particle/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_reference.urdf
+          Description File: /home/pratikk/EQTrackingControl/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_reference.urdf
           Description Source: File
           Description Topic:
             Depth: 5
@@ -125,7 +125,7 @@ Visualization Manager:
         - Alpha: 1
           Class: rviz_default_plugins/RobotModel
           Collision Enabled: false
-          Description File: /home/pratikk/point_particle/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_symmetry.urdf
+          Description File: /home/pratikk/EQTrackingControl/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_symmetry.urdf
           Description Source: File
           Description Topic:
             Depth: 5
@@ -190,7 +190,7 @@ Visualization Manager:
         - Alpha: 1
           Class: rviz_default_plugins/RobotModel
           Collision Enabled: false
-          Description File: /home/pratikk/point_particle/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_baseline.urdf
+          Description File: /home/pratikk/EQTrackingControl/ros2_ws/install/trajectory_visualization/share/trajectory_visualization/quadrotor_baseline.urdf
           Description Source: File
           Description Topic:
             Depth: 5

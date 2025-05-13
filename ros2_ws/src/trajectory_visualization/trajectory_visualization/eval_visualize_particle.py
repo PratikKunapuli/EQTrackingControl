@@ -21,7 +21,7 @@ path = Path()
 
 class MinimalPublisher(Node):
 
-    def __init__(self, ref_pos, baseline_pos, eq_pos, real_time_factor = 4.0, frame_rate = 20.0):
+    def __init__(self, ref_pos, baseline_pos, eq_pos, real_time_factor = 0.5, frame_rate = 20.0):
         super().__init__('visualizer')
         self.frame_rate = frame_rate
 
@@ -248,6 +248,8 @@ def main():
     eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/anim_eq.npy")
 
     rclpy.init(args=None)
+
+    input()
 
     minimal_publisher = MinimalPublisher(ref_pos, baseline_pos, eq_pos,)
 

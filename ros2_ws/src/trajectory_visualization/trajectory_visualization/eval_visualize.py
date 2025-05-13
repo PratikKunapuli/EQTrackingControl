@@ -19,7 +19,7 @@ path = Path()
 
 class MinimalPublisher(Node):
 
-    def __init__(self, ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, real_time_factor = 1.0, frame_rate = 20.0):
+    def __init__(self, ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat, real_time_factor = 0.5, frame_rate = 20.0):
         super().__init__('visualizer')
         self.frame_rate = frame_rate
 
@@ -78,10 +78,7 @@ class MinimalPublisher(Node):
         now = self.get_clock().now().to_msg()
 
         self.get_logger().info('Time t=%f Index i=%d' % (self.time, self.index))
-        self.time += 1.0 / self.frame_rate
-        self.index += 1
-        if self.index >= 2000:
-            self.index = 0
+        
 
         # TODO: replace all these p's and q's with real data!
         t = self.time
@@ -150,6 +147,11 @@ class MinimalPublisher(Node):
         self.path_publisher_eq.publish(self.path_eq)
         self.path_publisher_baseline.publish(self.path_baseline)
 
+        self.time += 1.0 / self.frame_rate
+        self.index += 1
+        if self.index >= 2000:
+            self.index = 0
+
 
 
     def send_pose(self, frame, p, q, now):
@@ -180,13 +182,19 @@ class MinimalPublisher(Node):
 def main():
     robot = sys.argv[2]
     print("visualizing the " + robot + "...")
-    ref_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/ref_pos.npy")
-    ref_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/ref_rotm.npy")
-    baseline_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/baseline_pos.npy")
-    baseline_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/baseline_rotm.npy")
-    eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_pos.npy")
-    eq_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_rotm.npy")
+    ref_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/ref_pos.npy").astype(np.float32)
+    ref_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/ref_quat.npy").astype(np.float32)
+    baseline_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/baseline_pos.npy").astype(np.float32)
+    baseline_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/baseline_quat.npy").astype(np.float32)
+    eq_pos = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_pos.npy").astype(np.float32)
+    eq_quat = np.load("./src/trajectory_visualization/trajectory_visualization/data/" + robot + "/equivariant_quat.npy").astype(np.float32)
     rclpy.init(args=None)
+
+    print("Reference Start: ", ref_pos[0])
+    print("EQ Start: ", eq_pos[0])
+    print("Baseline Start: ", baseline_pos[0])
+    input()
+
 
     minimal_publisher = MinimalPublisher(ref_pos, ref_quat, baseline_pos, baseline_quat, eq_pos, eq_quat)
 
