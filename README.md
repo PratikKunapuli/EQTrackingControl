@@ -74,7 +74,7 @@ Pretrained models are provided within the `checkpoints` directory, for all syste
 
 ## Citation
 If you use this repository or paper please cite the following:
-```
+```bibtex
 @misc{welde2024leveragingsymmetryacceleratelearning,
   title={Leveraging Symmetry to Accelerate Learning of Trajectory Tracking Controllers for Free-Flying Robotic Systems}, 
   author={Jake Welde and Nishanth Rao and Pratik Kunapuli and Dinesh Jayaraman and Vijay Kumar},
