@@ -446,7 +446,10 @@ class PointParticleRandomWalkVelocity(PointParticleBase):
             eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
             return eq_state
         elif self.equivariant == 3:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel,])
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+        elif self.equivariant == 4:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             return eq_state
         else:
             print("Invalid Equivariance Type!")
@@ -721,7 +724,10 @@ class PointParticleLissajousTracking(PointParticleBase):
             eq_state = jnp.hstack([state.pos, state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
             return eq_state
         elif self.equivariant == 3:
-            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel,])
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel, state.ref_acc])
+            return eq_state
+        elif self.equivariant == 4:
+            eq_state = jnp.hstack([state.pos - state.ref_pos, state.vel - state.ref_vel])
             return eq_state
         else:
             print("Invalid Equivariance Type!")

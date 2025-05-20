@@ -389,10 +389,9 @@ class SE3QuadFullyActuatedBase:
     def _is_terminal_error(self, env_state):
         # outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos)**2 > self.termination_bound)
         # exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
-        outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > self.termination_bound)
-        exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > self.termination_bound)
-        exceeded_error_angular_velocity = jnp.any(jnp.abs(env_state.ref_omega - env_state.omega) > 5. * self.termination_bound)
-        
+        outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos) > self.termination_bound)
+        exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel) > self.termination_bound)
+        exceeded_error_angular_velocity = jnp.any(jnp.linalg.norm(env_state.ref_omega - env_state.omega) > 2.5 * self.termination_bound)
         #jax.debug.print("outside_world_bounds: {x}", x=outside_world_bounds)
         #jax.debug.print("Exceeded error velocity: {x}", x=exceeded_error_velocity)
         #jax.debug.print("Exceeded error angular velocity: {x}", x=exceeded_error_angular_velocity)
@@ -456,12 +455,6 @@ class SE3QuadFullyActuatedBase:
 
         terminal_reward = lax.select(termination_from_error, self.terminal_reward, 0.0)
 
-        #dest_reached = self._is_terminal_reach(state)
-        #dest_reach_reward = lax.select(dest_reached, self.reach_reward, 0.0)
-        dest_reach_reward_modified = 1.0 - jnp.tanh(0.01 * jnp.linalg.norm(env_state.ref_pos - env_state.pos) / (self.epsilon_ball_radius * 0.5))
-        
-        dest_reach_reward = lax.select(self.reach_reward, dest_reach_reward_modified, 0.0)
-
         logm_rot_err = self._compute_logm(state.ref_rotm.T @ state.rotm)
 
         # # I realized that when logm is very small (close to zero), the matrix norm (Frobenius) also is very small
@@ -505,6 +498,11 @@ class SE3QuadFullyActuatedBase:
             else:
                 raise ValueError("Invalid Symmetry type!")
 
+            dest_reach_reward_modified = 0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(state.ref_pos - state.pos) / (self.epsilon_ball_radius * 0.5))) + \
+                                     0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(geodesic_SO3) / (self.epsilon_ball_radius * 0.5)))
+        
+            dest_reach_reward = lax.select(self.reach_reward, dest_reach_reward_modified, 0.0)
+
             reward_no_des_act = -self.reward_q_pos * (jnp.sum(jnp.abs(pos_error))) - self.reward_q_vel * (jnp.sum(jnp.abs(vel_error))) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.sum(jnp.abs(omega_error))) - self.reward_r * (jnp.sum(jnp.abs(action))) + terminal_reward + dest_reach_reward
             reward_yes_des_act = -self.reward_q_pos * (jnp.sum(jnp.abs(pos_error))) - self.reward_q_vel * (jnp.sum(jnp.abs(vel_error))) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.sum(jnp.abs(omega_error))) - self.reward_r * (jnp.sum(jnp.abs(action - des_action))) + terminal_reward + dest_reach_reward
 
@@ -531,6 +529,11 @@ class SE3QuadFullyActuatedBase:
                 pos_error = state.rotm.T @ (state.ref_pos - state.pos)
             else:
                 raise ValueError("Invalid Symmetry type!")
+
+            dest_reach_reward_modified = 0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(pos_error) / (self.epsilon_ball_radius * 0.5))) + \
+                                     0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(geodesic_SO3) / (self.epsilon_ball_radius * 0.5)))
+        
+            dest_reach_reward = lax.select(self.reach_reward, dest_reach_reward_modified, 0.0)
 
             reward_no_des_act = -self.reward_q_pos * (jnp.linalg.norm(pos_error)) - self.reward_q_vel * (jnp.linalg.norm(vel_error)) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(omega_error)) - self.reward_r * (jnp.linalg.norm(action)) + terminal_reward + dest_reach_reward
             reward_yes_des_act = -self.reward_q_pos * (jnp.linalg.norm(pos_error)) - self.reward_q_vel * (jnp.linalg.norm(vel_error)) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(omega_error)) - self.reward_r * (jnp.linalg.norm(action - des_action)) + terminal_reward + dest_reach_reward
@@ -627,13 +630,13 @@ class SE2xRQuadBase:
     def _is_terminal_error(self, env_state):
         # outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos)**2 > self.termination_bound)
         # exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel)**2 > self.termination_bound)
-        outside_world_bounds = jnp.any(jnp.abs(env_state.ref_pos - env_state.pos) > self.termination_bound)
-        exceeded_error_velocity = jnp.any(jnp.abs(env_state.ref_vel - env_state.vel) > self.termination_bound)
-        exceeded_error_angular_velocity = jnp.any(jnp.abs(env_state.ref_omega - env_state.omega) > self.termination_bound)
+        outside_world_bounds = jnp.any(jnp.linalg.norm(env_state.ref_pos - env_state.pos) > self.termination_bound)
+        exceeded_error_velocity = jnp.any(jnp.linalg.norm(env_state.ref_vel - env_state.vel) > self.termination_bound)
+        exceeded_error_angular_velocity = jnp.any(jnp.linalg.norm(env_state.ref_omega - env_state.omega) > self.termination_bound)
         
         euler = Rotation.from_matrix(env_state.rotm).as_euler("zyx", degrees=False)
         ref_euler = Rotation.from_matrix(env_state.ref_rotm).as_euler("zyx", degrees=False)
-        exceeded_error_euler = jnp.any(jnp.abs(ref_euler - euler) > jnp.pi/2)
+        exceeded_error_euler = jnp.any(jnp.linalg.norm(ref_euler - euler) > jnp.pi/2)
         # exceeded_error_velocity = False
 
         return jnp.logical_or(jnp.logical_or(outside_world_bounds, exceeded_error_velocity,), jnp.logical_or(exceeded_error_angular_velocity, exceeded_error_euler))
@@ -692,9 +695,6 @@ class SE2xRQuadBase:
 
         #dest_reached = self._is_terminal_reach(state)
         #dest_reach_reward = lax.select(dest_reached, self.reach_reward, 0.0)
-        dest_reach_reward_modified = 1.0 - jnp.tanh(0.01 * jnp.linalg.norm(env_state.ref_pos - env_state.pos) / (self.epsilon_ball_radius * 0.5))
-        
-        dest_reach_reward = lax.select(self.reach_reward, dest_reach_reward_modified, 0.0)
 
         logm_rot_err = self._compute_logm(state.ref_rotm.T @ state.rotm)
 
@@ -707,12 +707,17 @@ class SE2xRQuadBase:
         #geodesic_SO3 = lax.cond(is_logm_rot_small, self._return_zero, self._get_matrix_norm, logm_rot_err)
         geodesic_SO3 = self._get_matrix_norm(logm_rot_err)
 
+        dest_reach_reward_modified = 0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(env_state.ref_pos - env_state.pos) / (self.epsilon_ball_radius * 0.5))) + \
+                                     0.5 * (1.0 - jnp.tanh(0.01 * jnp.linalg.norm(geodesic_SO3) / (self.epsilon_ball_radius * 0.5)))
+        
+        dest_reach_reward = lax.select(self.reach_reward, dest_reach_reward_modified, 0.0)
+
         if self.use_abs_reward_fn:
             reward_no_des_act = -self.reward_q_pos * (jnp.sum(jnp.abs(state.ref_pos - state.pos))) - self.reward_q_vel * (jnp.sum(jnp.abs(state.ref_vel - state.vel))) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.sum(jnp.abs(state.ref_omega - state.omega))) - self.reward_r * (jnp.sum(jnp.abs(action))) + terminal_reward + dest_reach_reward
             reward_yes_des_act = -self.reward_q_pos * (jnp.sum(jnp.abs(state.ref_pos - state.pos))) - self.reward_q_vel * (jnp.sum(jnp.abs(state.ref_vel - state.vel))) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.sum(jnp.abs(state.ref_omega - state.omega))) - self.reward_r * (jnp.sum(jnp.abs(action - des_action))) + terminal_reward + dest_reach_reward
         else:
-            reward_no_des_act = -self.reward_q_pos * (jnp.linalg.norm(state.ref_pos - state.pos)**2) - self.reward_q_vel * (jnp.linalg.norm(state.ref_vel - state.vel)**2) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(state.ref_omega - state.omega)) - self.reward_r * (jnp.linalg.norm(action)**2) + terminal_reward + dest_reach_reward
-            reward_yes_des_act = -self.reward_q_pos * (jnp.linalg.norm(state.ref_pos - state.pos)**2) - self.reward_q_vel * (jnp.linalg.norm(state.ref_vel - state.vel)**2) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(state.ref_omega - state.omega)) - self.reward_r * (jnp.linalg.norm(action - des_action)**2) + terminal_reward + dest_reach_reward
+            reward_no_des_act = -self.reward_q_pos * (jnp.linalg.norm(state.ref_pos - state.pos)) - self.reward_q_vel * (jnp.linalg.norm(state.ref_vel - state.vel)) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(state.ref_omega - state.omega)) - self.reward_r * (jnp.linalg.norm(action)) + terminal_reward + dest_reach_reward
+            reward_yes_des_act = -self.reward_q_pos * (jnp.linalg.norm(state.ref_pos - state.pos)) - self.reward_q_vel * (jnp.linalg.norm(state.ref_vel - state.vel)) - self.reward_q_rot * (geodesic_SO3) - self.reward_q_omega * (jnp.linalg.norm(state.ref_omega - state.omega)) - self.reward_r * (jnp.linalg.norm(action - des_action)) + terminal_reward + dest_reach_reward
 
         final_reward = lax.select(self.use_des_action_in_reward, reward_yes_des_act, reward_no_des_act)
 
